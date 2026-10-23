@@ -182,9 +182,9 @@ export function ChallanModal({
 
   return (
     <Modal isOpen={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <Modal.Backdrop>
-        <Modal.Container size="lg" className="max-w-4xl">
-          <Modal.Dialog>
+      <Modal.Backdrop className="backdrop-blur-sm z-50 p-2 sm:p-4">
+        <Modal.Container className="modal-container-fitted-wide">
+          <Modal.Dialog className="modal-dialog-fitted-wide !max-w-5xl !w-full overflow-hidden shadow-2xl rounded-2xl bg-surface border border-border">
             <Modal.Header className="no-print">
               <div className="flex items-center gap-2">
                 <FileCheck className="w-5 h-5 text-primary" />
@@ -195,7 +195,7 @@ export function ChallanModal({
               <Modal.CloseTrigger />
             </Modal.Header>
 
-            <Modal.Body className="space-y-4 p-4 md:p-6">
+            <Modal.Body className="space-y-4 p-4 md:p-6 overflow-y-auto max-h-[82vh]">
               {/* Copy selector banner (no-print) */}
               <div className="no-print flex flex-wrap items-center justify-between gap-3 p-3 bg-surface border border-border rounded-xl">
                 <div className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export function ChallanModal({
                 <div className="text-center border-b-2 border-zinc-950 pb-4 space-y-1 relative">
                   <div className="flex items-center justify-between">
                     {/* Official Ashoka Emblem Badge */}
-                    <div className="w-12 h-12 rounded-full border-2 border-zinc-900 flex items-center justify-center font-bold text-xs bg-zinc-100 text-zinc-900">
+                    <div className="w-12 h-12 rounded-full border-2 border-zinc-900 flex items-center justify-center font-bold text-xs bg-zinc-100 text-zinc-900 shrink-0">
                       🏛️ iPDS
                     </div>
 
@@ -245,19 +245,19 @@ export function ChallanModal({
                       <p className="text-[11px] font-bold tracking-widest uppercase text-zinc-600">
                         GOVERNMENT OF NATIONAL CAPITAL TERRITORY OF DELHI
                       </p>
-                      <h2 className="text-base md:text-xl font-black text-zinc-950 tracking-tight uppercase">
+                      <h2 className="text-base sm:text-lg md:text-xl font-black text-zinc-950 tracking-tight uppercase">
                         DEPARTMENT OF FOOD, SUPPLIES &amp; CONSUMER AFFAIRS
                       </h2>
                       <h4 className="text-xs md:text-sm font-bold text-zinc-800">
                         STATE BUFFER GODOWN UNIT-4 • CENTRAL GRAIN DEPOT
                       </h4>
-                      <p className="text-[11px] font-semibold text-zinc-600 tracking-wider">
+                      <p className="text-[10px] sm:text-[11px] font-semibold text-zinc-600 tracking-wider">
                         FORM PDS-DC-04 • STATUTORY COMMODITY DELIVERY CHALLAN &amp; GATE EXIT PERMIT
                       </p>
                     </div>
 
                     {/* Official Security Stamp Emblem */}
-                    <div className="w-12 h-12 rounded-full border-2 border-emerald-800 flex flex-col items-center justify-center text-[8px] font-extrabold text-emerald-800 bg-emerald-50">
+                    <div className="w-12 h-12 rounded-full border-2 border-emerald-800 flex flex-col items-center justify-center text-[8px] font-extrabold text-emerald-800 bg-emerald-50 shrink-0">
                       <span>OFFICIAL</span>
                       <span>SEAL</span>
                     </div>
@@ -353,48 +353,50 @@ export function ChallanModal({
                     </span>
                   </div>
 
-                  <table className="w-full text-xs border border-zinc-300 rounded-lg overflow-hidden">
-                    <thead className="bg-zinc-100 text-zinc-900 border-b border-zinc-300 font-bold uppercase text-[10px] tracking-wider">
-                      <tr>
-                        <th className="py-2.5 px-3 text-left">Sr.</th>
-                        <th className="py-2.5 px-3 text-left">Stack Batch ID</th>
-                        <th className="py-2.5 px-3 text-left">Bay Location</th>
-                        <th className="py-2.5 px-3 text-right">Stock Age</th>
-                        <th className="py-2.5 px-3 text-right">Est. 50kg Bags</th>
-                        <th className="py-2.5 px-3 text-right">Dispatched Qty (Quintals)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-zinc-200">
-                      {challan.batches.map((item, idx) => {
-                        const bags = Math.round(item.dispatchedQty * 2);
-                        return (
-                          <tr key={item.batchId} className="hover:bg-zinc-50/50">
-                            <td className="py-2 px-3 text-zinc-500 font-medium">{idx + 1}</td>
-                            <td className="py-2 px-3 font-mono font-bold text-zinc-950">{item.batchId}</td>
-                            <td className="py-2 px-3 font-semibold text-zinc-800">{item.bayLocation}</td>
-                            <td className="py-2 px-3 text-right text-zinc-600">{item.batchAgeDays} Days</td>
-                            <td className="py-2 px-3 text-right font-medium text-zinc-800">{bags} Bags</td>
-                            <td className="py-2 px-3 text-right font-black text-zinc-950 text-sm">
-                              {item.dispatchedQty} Q
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot className="bg-zinc-100/80 border-t-2 border-zinc-400 font-bold text-zinc-950">
-                      <tr>
-                        <td colSpan={4} className="py-2.5 px-3 text-right uppercase tracking-wider text-xs">
-                          Total Net Dispatched Weight:
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-bold text-sm">
-                          {totalBags} Bags
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-black text-base">
-                          {challan.totalQuantity} Quintals
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
+                  <div className="overflow-x-auto rounded-lg border border-zinc-300">
+                    <table className="w-full text-xs min-w-[580px]">
+                      <thead className="bg-zinc-100 text-zinc-900 border-b border-zinc-300 font-bold uppercase text-[10px] tracking-wider">
+                        <tr>
+                          <th className="py-2.5 px-3 text-left">Sr.</th>
+                          <th className="py-2.5 px-3 text-left">Stack Batch ID</th>
+                          <th className="py-2.5 px-3 text-left">Bay Location</th>
+                          <th className="py-2.5 px-3 text-right">Stock Age</th>
+                          <th className="py-2.5 px-3 text-right">Est. 50kg Bags</th>
+                          <th className="py-2.5 px-3 text-right">Dispatched Qty (Quintals)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-zinc-200">
+                        {challan.batches.map((item, idx) => {
+                          const bags = Math.round(item.dispatchedQty * 2);
+                          return (
+                            <tr key={item.batchId} className="hover:bg-zinc-50/50">
+                              <td className="py-2 px-3 text-zinc-500 font-medium">{idx + 1}</td>
+                              <td className="py-2 px-3 font-mono font-bold text-zinc-950">{item.batchId}</td>
+                              <td className="py-2 px-3 font-semibold text-zinc-800">{item.bayLocation}</td>
+                              <td className="py-2 px-3 text-right text-zinc-600">{item.batchAgeDays} Days</td>
+                              <td className="py-2 px-3 text-right font-medium text-zinc-800">{bags} Bags</td>
+                              <td className="py-2 px-3 text-right font-black text-zinc-950 text-sm">
+                                {item.dispatchedQty} Q
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                      <tfoot className="bg-zinc-100/80 border-t-2 border-zinc-400 font-bold text-zinc-950">
+                        <tr>
+                          <td colSpan={4} className="py-2.5 px-3 text-right uppercase tracking-wider text-xs">
+                            Total Net Dispatched Weight:
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-bold text-sm">
+                            {totalBags} Bags
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-black text-base">
+                            {challan.totalQuantity} Quintals
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 </div>
 
                 {/* Delivery Challan Verification QR Code & Security Clear Box */}
@@ -446,7 +448,7 @@ export function ChallanModal({
                 </div>
 
                 {/* Official Signatures Row */}
-                <div className="pt-6 border-t border-zinc-400 grid grid-cols-3 gap-6 text-center text-xs">
+                <div className="pt-6 border-t border-zinc-400 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center text-xs">
                   <div className="space-y-8">
                     <div className="h-10 flex items-end justify-center">
                       <span className="font-cursive text-sm text-zinc-700 italic border-b border-zinc-400 pb-0.5 px-4">

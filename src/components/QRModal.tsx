@@ -358,26 +358,26 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
       }}
     >
       <Modal.Backdrop className="backdrop-blur-sm z-50 p-2 sm:p-4">
-        <Modal.Container size="lg" className="!max-w-5xl !w-full max-h-[92vh] flex flex-col">
-          <Modal.Dialog className="flex flex-col flex-1 overflow-hidden bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl">
+        <Modal.Container className="modal-container-fitted-wide">
+          <Modal.Dialog className="modal-dialog-fitted-wide !max-w-5xl !w-full flex flex-col flex-1 max-h-[92vh] overflow-hidden bg-surface border border-border rounded-2xl shadow-2xl text-foreground">
             {/* Modal Header */}
-            <Modal.Header className="border-b border-slate-800 px-5 py-4 shrink-0 bg-slate-900/95">
+            <Modal.Header className="border-b border-border px-5 py-4 shrink-0 bg-surface">
               <div className="flex items-center justify-between w-full pr-6">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-primary/10 text-primary border border-primary/20 shrink-0">
                     <QrCode className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Modal.Heading className="text-base sm:text-lg font-black text-white">
+                      <Modal.Heading className="text-base sm:text-lg font-black text-foreground">
                         Batch Sack QR Management Portal
                       </Modal.Heading>
-                      <Chip size="sm" color="warning" variant="soft" className="font-bold text-[10px]">
+                      <Chip size="sm" color="accent" variant="soft" className="font-bold text-[10px]">
                         {totalSacks} Sacks Total
                       </Chip>
                     </div>
-                    <p className="text-xs text-slate-400">
-                      Batch <strong className="text-white font-mono">{batch.id}</strong> •{" "}
+                    <p className="text-xs text-muted">
+                      Batch <strong className="text-foreground font-mono">{batch.id}</strong> •{" "}
                       {batch.commodity} • Stack {batch.bayLocation}
                     </p>
                   </div>
@@ -389,7 +389,7 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                     variant="primary"
                     isDisabled={isGeneratingPrint}
                     onPress={() => handlePrintAllPassportPDF(allSacks)}
-                    className="font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer shadow-md"
+                    className="font-bold text-xs cursor-pointer shadow-xs"
                   >
                     <Printer className={`w-3.5 h-3.5 mr-1.5 ${isGeneratingPrint ? "animate-spin" : ""}`} />
                     {isGeneratingPrint ? "Generating PDF..." : "Print All QRs (Passport Size PDF)"}
@@ -400,37 +400,37 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
             </Modal.Header>
 
             {/* Modal Body: Scrollable Content */}
-            <Modal.Body className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
+            <Modal.Body className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1 bg-surface">
               {/* Batch Metadata Header Card (No batch QR code here as instructed) */}
-              <div className="p-4 rounded-xl border border-slate-800 bg-slate-950/80 shadow-md">
+              <div className="p-4 rounded-xl border border-border bg-background/50 shadow-xs">
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-xs">
                   <div className="space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Batch ID</span>
-                    <div className="font-mono font-black text-white text-sm">{batch.id}</div>
+                    <span className="text-[10px] uppercase font-bold text-muted">Batch ID</span>
+                    <div className="font-mono font-black text-foreground text-sm">{batch.id}</div>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Commodity</span>
-                    <div className="font-bold text-slate-200">{batch.commodity}</div>
+                    <span className="text-[10px] uppercase font-bold text-muted">Commodity</span>
+                    <div className="font-bold text-foreground">{batch.commodity}</div>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Stack Bay</span>
-                    <div className="font-mono font-bold text-amber-400">{batch.bayLocation}</div>
+                    <span className="text-[10px] uppercase font-bold text-muted">Stack Bay</span>
+                    <div className="font-mono font-bold text-primary">{batch.bayLocation}</div>
                   </div>
                   <div className="space-y-0.5">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Received Quantity</span>
-                    <div className="font-bold text-slate-200">{totalQuintals} Quintals</div>
+                    <span className="text-[10px] uppercase font-bold text-muted">Received Quantity</span>
+                    <div className="font-bold text-foreground">{totalQuintals} Quintals</div>
                   </div>
                   <div className="space-y-0.5 col-span-2 sm:col-span-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Authorized Sacks</span>
-                    <div className="font-mono font-black text-emerald-400 text-sm">
-                      {totalSacks} Sacks <span className="text-[10px] text-slate-400 font-normal">(50 KG each)</span>
+                    <span className="text-[10px] uppercase font-bold text-muted">Authorized Sacks</span>
+                    <div className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                      {totalSacks} Sacks <span className="text-[10px] text-muted font-normal">(50 KG each)</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* View QRs Section Toolbar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-3 rounded-xl border border-border">
                 {/* View Switcher / Tab */}
                 <div className="flex items-center gap-2">
                   <button
@@ -438,8 +438,8 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                     onClick={() => setActiveView("sack_qrs")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       activeView === "sack_qrs"
-                        ? "bg-amber-500 text-slate-950 shadow-sm"
-                        : "bg-slate-900 text-slate-400 hover:text-white"
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "bg-background text-muted hover:text-foreground border border-border"
                     }`}
                   >
                     <Boxes className="w-3.5 h-3.5" />
@@ -451,8 +451,8 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                     onClick={() => setActiveView("summary")}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                       activeView === "summary"
-                        ? "bg-amber-500 text-slate-950 shadow-sm"
-                        : "bg-slate-900 text-slate-400 hover:text-white"
+                        ? "bg-primary text-primary-foreground shadow-xs"
+                        : "bg-background text-muted hover:text-foreground border border-border"
                     }`}
                   >
                     <Layers className="w-3.5 h-3.5" />
@@ -463,8 +463,8 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                 {/* Search / Filter and Print Controls */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {activeView === "sack_qrs" && (
-                    <div className="relative min-w-[160px] sm:min-w-[190px]">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <div className="relative min-w-[180px] sm:min-w-[220px]">
+                      <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
                       <input
                         type="text"
                         placeholder="Search Sack # (e.g. 001)..."
@@ -473,7 +473,7 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                           setSearchQuery(e.target.value);
                           setCurrentPage(1);
                         }}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 font-mono"
+                        className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-primary font-mono"
                       />
                     </div>
                   )}
@@ -483,7 +483,7 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                     variant="primary"
                     isDisabled={isGeneratingPrint}
                     onPress={() => handlePrintAllPassportPDF(filteredSacks)}
-                    className="font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer shadow-md sm:hidden"
+                    className="font-bold text-xs cursor-pointer shadow-xs sm:hidden"
                   >
                     <Printer className="w-3.5 h-3.5 mr-1" />
                     Print PDF
@@ -494,16 +494,16 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
               {/* ─── TAB 1: SACK QRS VIEW ─── */}
               {activeView === "sack_qrs" && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-400 px-1">
+                  <div className="flex items-center justify-between text-xs text-muted px-1">
                     <span>
                       Showing {paginatedSacks.length} of {filteredSacks.length} sack stickers (Format:{" "}
-                      <strong className="text-amber-400 font-mono">BATCHID_Serialnumber</strong>)
+                      <strong className="text-primary font-mono">BATCHID_Serialnumber</strong>)
                     </span>
 
                     <button
                       type="button"
                       onClick={() => setShowAllSacks(!showAllSacks)}
-                      className="text-xs text-amber-400 hover:underline cursor-pointer font-semibold"
+                      className="text-xs text-primary hover:underline cursor-pointer font-semibold"
                     >
                       {showAllSacks ? `Show Paginated (${ITEMS_PER_PAGE}/page)` : "Show All Sacks"}
                     </button>
@@ -511,7 +511,7 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
 
                   {/* Grid of Passport-Size Sack Sticker Cards */}
                   {paginatedSacks.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 text-xs">
+                    <div className="text-center py-12 text-muted text-xs">
                       No sacks match search filter "{searchQuery}".
                     </div>
                   ) : (
@@ -521,54 +521,54 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                         return (
                           <div
                             key={s.sackQrId}
-                            className="p-2.5 rounded-xl border border-dashed border-slate-700 hover:border-amber-400/80 bg-slate-950 transition-all hover:shadow-lg flex flex-col items-center justify-between text-center space-y-2 group relative"
+                            className="p-3 rounded-xl border border-border hover:border-primary/60 bg-surface transition-all hover:shadow-md flex flex-col items-center justify-between text-center space-y-2 group relative"
                             title={`Sack QR ID: ${s.sackQrId}`}
                           >
                             {/* Sticker Header */}
-                            <div className="w-full flex items-center justify-between text-[9px] border-b border-slate-800 pb-1">
-                              <span className="font-bold uppercase tracking-wider text-slate-400">
+                            <div className="w-full flex items-center justify-between text-[9px] border-b border-border pb-1">
+                              <span className="font-bold uppercase tracking-wider text-muted">
                                 50 KG SACK
                               </span>
-                              <span className="font-mono font-black text-amber-400">
+                              <span className="font-mono font-black text-primary">
                                 #{s.serialNumber}
                               </span>
                             </div>
 
                             {/* Crisp SVG QR Code */}
-                            <div className="p-1 rounded-lg bg-white shadow-xs">
-                              <QRCodeSvg value={s.sackQrId} size={84} />
+                            <div className="p-1.5 rounded-lg bg-white border border-zinc-200 shadow-xs flex items-center justify-center">
+                              <QRCodeSvg value={s.sackQrId} size={88} />
                             </div>
 
                             {/* Sack QR ID in BATCHID_Serialnumber format */}
                             <div className="w-full space-y-0.5">
-                              <div className="font-mono text-[10px] font-black text-white truncate px-1 py-0.5 rounded bg-slate-900 border border-slate-800">
+                              <div className="font-mono text-[10px] font-black text-foreground truncate px-1.5 py-0.5 rounded bg-background border border-border">
                                 {s.sackQrId}
                               </div>
-                              <div className="text-[9px] text-slate-400 truncate">
+                              <div className="text-[9px] text-muted truncate">
                                 {batch.commodity} • {batch.bayLocation}
                               </div>
                             </div>
 
                             {/* Quick Action Buttons */}
-                            <div className="w-full pt-1 border-t border-slate-800/80 flex items-center justify-between gap-1">
+                            <div className="w-full pt-1.5 border-t border-border flex items-center justify-between gap-1">
                               <button
                                 type="button"
                                 onClick={() => handleCopy(s.sackQrId)}
                                 className={`flex-1 py-1 px-1 rounded text-[10px] font-semibold transition-colors flex items-center justify-center gap-1 cursor-pointer ${
                                   isCopied
-                                    ? "bg-emerald-950 text-emerald-300 border border-emerald-500/40"
-                                    : "bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800"
+                                    ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30"
+                                    : "bg-background hover:bg-muted/20 text-foreground border border-border"
                                 }`}
                                 title="Copy Sack QR ID"
                               >
                                 {isCopied ? (
                                   <>
-                                    <Check className="w-3 h-3 text-emerald-400" />
+                                    <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                                     <span>Copied</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Copy className="w-3 h-3 text-slate-400" />
+                                    <Copy className="w-3 h-3 text-muted" />
                                     <span>Copy</span>
                                   </>
                                 )}
@@ -577,7 +577,7 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                               <button
                                 type="button"
                                 onClick={() => handlePrintAllPassportPDF([s])}
-                                className="p-1 rounded bg-slate-900 hover:bg-amber-500 hover:text-slate-950 text-slate-400 transition-colors border border-slate-800 cursor-pointer"
+                                className="p-1 rounded bg-background hover:bg-primary hover:text-primary-foreground text-muted transition-colors border border-border cursor-pointer"
                                 title="Print Single Sticker"
                               >
                                 <Printer className="w-3 h-3" />
@@ -591,8 +591,8 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
 
                   {/* Pagination Controls */}
                   {!showAllSacks && totalPages > 1 && (
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
-                      <span className="text-slate-400">
+                    <div className="flex items-center justify-between pt-2 border-t border-border text-xs">
+                      <span className="text-muted">
                         Page {currentPage} of {totalPages}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -622,66 +622,66 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
 
               {/* ─── TAB 2: BATCH INFO VIEW ─── */}
               {activeView === "summary" && (
-                <div className="border border-slate-800 rounded-xl p-5 bg-slate-950 space-y-4 text-xs">
-                  <div className="space-y-1 border-b border-slate-800 pb-3">
-                    <h4 className="font-bold text-sm text-white">Batch Compliance & Storage Record</h4>
-                    <p className="text-slate-400">
+                <div className="border border-border rounded-xl p-5 bg-surface space-y-4 text-xs">
+                  <div className="space-y-1 border-b border-border pb-3">
+                    <h4 className="font-bold text-sm text-foreground">Batch Compliance &amp; Storage Record</h4>
+                    <p className="text-muted">
                       State Buffer Godown Unit-4 • Integrated Management of Public Distribution System
                     </p>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <div className="flex justify-between border-b border-slate-800/60 py-1">
-                        <span className="text-slate-400">Supplier Depot:</span>
-                        <span className="font-semibold text-white truncate max-w-[220px]">
+                      <div className="flex justify-between border-b border-border/60 py-1.5">
+                        <span className="text-muted">Supplier Depot:</span>
+                        <span className="font-semibold text-foreground truncate max-w-[220px]">
                           {batch.supplier}
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-slate-800/60 py-1">
-                        <span className="text-slate-400">Receipt Date:</span>
-                        <span className="font-mono text-white">
+                      <div className="flex justify-between border-b border-border/60 py-1.5">
+                        <span className="text-muted">Receipt Date:</span>
+                        <span className="font-mono text-foreground">
                           {batch.receiptDate} ({ageDays} Days in godown)
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-slate-800/60 py-1">
-                        <span className="text-slate-400">Expiry Date:</span>
-                        <span className="font-mono text-white">{batch.expiryDate}</span>
+                      <div className="flex justify-between border-b border-border/60 py-1.5">
+                        <span className="text-muted">Expiry Date:</span>
+                        <span className="font-mono text-foreground">{batch.expiryDate}</span>
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex justify-between border-b border-slate-800/60 py-1">
-                        <span className="text-slate-400">Current Balance:</span>
-                        <span className="font-bold text-white">
+                      <div className="flex justify-between border-b border-border/60 py-1.5">
+                        <span className="text-muted">Current Balance:</span>
+                        <span className="font-bold text-foreground">
                           {batch.remainingQty} Q ({Math.round(batch.remainingQty * 2)} Sacks remaining)
                         </span>
                       </div>
-                      <div className="flex justify-between border-b border-slate-800/60 py-1">
-                        <span className="text-slate-400">Moisture Content:</span>
-                        <span className="font-mono text-white">{batch.moisturePct}%</span>
+                      <div className="flex justify-between border-b border-border/60 py-1.5">
+                        <span className="text-muted">Moisture Content:</span>
+                        <span className="font-mono text-foreground">{batch.moisturePct}%</span>
                       </div>
-                      <div className="flex justify-between border-b border-slate-800/60 py-1">
-                        <span className="text-slate-400">FIFO Status:</span>
-                        <span className="font-bold text-emerald-400">{batch.status}</span>
+                      <div className="flex justify-between border-b border-border/60 py-1.5">
+                        <span className="text-muted">FIFO Status:</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">{batch.status}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between">
+                  <div className="p-3.5 rounded-lg bg-primary/10 border border-primary/20 text-foreground text-xs flex items-center justify-between gap-3">
                     <div>
-                      <strong className="block">Passport Size Sack Stickers Ready</strong>
-                      <span>
+                      <strong className="block text-primary">Passport Size Sack Stickers Ready</strong>
+                      <span className="text-muted">
                         All {totalSacks} sacks are assigned serialized IDs in the format{" "}
-                        <strong className="font-mono">{batch.id}_001</strong> to{" "}
-                        <strong className="font-mono">{batch.id}_{String(totalSacks).padStart(padLength, "0")}</strong>.
+                        <strong className="font-mono text-foreground">{batch.id}_001</strong> to{" "}
+                        <strong className="font-mono text-foreground">{batch.id}_{String(totalSacks).padStart(padLength, "0")}</strong>.
                       </span>
                     </div>
                     <Button
                       size="sm"
                       variant="primary"
                       onPress={() => setActiveView("sack_qrs")}
-                      className="font-bold bg-amber-500 text-slate-950 text-xs shrink-0 cursor-pointer"
+                      className="font-bold text-xs shrink-0 cursor-pointer shadow-xs"
                     >
                       View Sack QRs
                     </Button>
@@ -691,8 +691,8 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
             </Modal.Body>
 
             {/* Modal Footer */}
-            <Modal.Footer className="border-t border-slate-800 px-5 py-3.5 bg-slate-900/95 flex items-center justify-between shrink-0">
-              <div className="text-xs text-slate-400 hidden sm:block">
+            <Modal.Footer className="border-t border-border px-5 py-3.5 bg-surface flex items-center justify-between shrink-0">
+              <div className="text-xs text-muted hidden sm:block">
                 <span>Passport size: 45mm x 51mm • 20 stickers / A4 sheet</span>
               </div>
 
@@ -705,7 +705,7 @@ export function QRModal({ batch, isOpen, onClose }: QRModalProps) {
                   size="sm"
                   isDisabled={isGeneratingPrint}
                   onPress={() => handlePrintAllPassportPDF(filteredSacks)}
-                  className="font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 cursor-pointer shadow-md"
+                  className="font-bold text-xs cursor-pointer shadow-xs"
                 >
                   <Printer className={`w-3.5 h-3.5 mr-1.5 ${isGeneratingPrint ? "animate-spin" : ""}`} />
                   {isGeneratingPrint ? "Generating PDF..." : `Print All QRs (${filteredSacks.length} Sacks)`}
