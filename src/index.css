@@ -1,0 +1,132 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Reduced clean corner radius for dashboard cards and alerts (sleek 12px instead of oversized 32px) */
+.card,
+[data-slot="card"] {
+  border-radius: 0.75rem !important;
+}
+
+.alert,
+[data-slot="alert"] {
+  border-radius: 0.75rem !important;
+}
+
+/* Ensure collapsed vertical tabs center icons without min-w-20 or extra padding */
+aside[data-collapsed="true"] .tabs__list-container,
+aside.sidebar-collapsed .tabs__list-container {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  border-radius: 0.5rem !important;
+}
+
+aside[data-collapsed="true"] .tabs__list,
+aside.sidebar-collapsed .tabs__list {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 0.25rem 0 !important;
+}
+
+aside[data-collapsed="true"] .tabs__tab,
+aside.sidebar-collapsed .tabs__tab {
+  min-width: 0 !important;
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  padding: 0 !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* ─── OFFICIAL GOVERNMENT DELIVERY CHALLAN & GATE PASS PRINT MEDIA STYLES ─── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide app navigation, headers, sidebars, buttons, close icons */
+  header,
+  aside,
+  button,
+  .no-print,
+  [data-slot="close-button"] {
+    display: none !important;
+  }
+
+  /* Unconstrain overlay / modal containers so printable content is never clipped */
+  [data-overlay-container],
+  [data-slot="backdrop"],
+  [data-slot="dialog"],
+  [data-slot="base"] {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    transform: none !important;
+  }
+
+  /* Ensure printable challan sheet displays fully */
+  #printable-challan-sheet {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 6mm !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: 2px solid #000000 !important;
+    border-radius: 4px !important;
+    font-size: 11pt !important;
+    line-height: 1.3 !important;
+  }
+
+  #printable-challan-sheet * {
+    visibility: visible !important;
+    color: #000000 !important;
+  }
+
+  #printable-challan-sheet table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  #printable-challan-sheet table th,
+  #printable-challan-sheet table td {
+    border: 1px solid #000000 !important;
+    padding: 5px 8px !important;
+  }
+}
+
+
