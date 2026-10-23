@@ -88,6 +88,17 @@ export function LoaderVerificationPortal({
   const [supervisorName, setSupervisorName] = useState("Ramu - Loader Gang 2");
   const [isSubmittingSignOff, setIsSubmittingSignOff] = useState(false);
 
+  // Loading Approved window state with green tick & scan more action
+  const [isApprovedSuccessModalOpen, setIsApprovedSuccessModalOpen] = useState(false);
+  const [approvedModalData, setApprovedModalData] = useState<{
+    challanNumber: string;
+    vehicleNumber: string;
+    fpsName: string;
+    totalBags: number;
+    supervisor: string;
+    qrId: string;
+  } | null>(null);
+
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -454,6 +465,27 @@ export function LoaderVerificationPortal({
     });
   };
 
+  // Action: Scan More / Next Consignment after approval
+  const handleScanMore = async () => {
+    setIsApprovedSuccessModalOpen(false);
+    setApprovedModalData(null);
+    await stopAndClearScanner();
+    setActiveChallan(null);
+    activeChallanRef.current = null;
+    scannedSackIdsRef.current = new Set();
+    setScannedSacks([]);
+    setFeedback({
+      type: "INFO",
+      title: "Ready for Next Consignment",
+      message: "Please scan a Delivery Challan QR code from Form PDS-DC-04 to begin verifying the next truck.",
+    });
+    lastScannedTextRef.current = "";
+    lastScannedTimeRef.current = 0;
+    if (activeTab === "camera") {
+      setTimeout(() => startCamera(facingMode), 200);
+    }
+  };
+
   // Process any scanned text (Challan QR or Sack QR)
   const processDecodedText = (decodedText: string) => {
     const raw = decodedText.trim();
@@ -800,8 +832,20 @@ export function LoaderVerificationPortal({
         console.warn("DB update background note:", dbErr);
       }
 
+      // Record approval data for the Approved Window
+      setApprovedModalData({
+        challanNumber: activeChallan.challanNumber,
+        vehicleNumber: activeChallan.vehicleNumber || "Consignee Vehicle",
+        fpsName: activeChallan.fpsName,
+        totalBags: totalVerifiedBags,
+        supervisor: supervisor,
+        qrId: activeChallan.qrId || `QR-${activeChallan.challanNumber.replace(/\D/g, "") || "1001"}`,
+      });
+
       setIsSignOffModalOpen(false);
+      setIsApprovedSuccessModalOpen(true);
       playSound("success");
+
       setFeedback({
         type: "SUCCESS",
         title: "Consignment Loading Verified & Signed Off!",
@@ -1706,6 +1750,114 @@ export function LoaderVerificationPortal({
                   {isSubmittingSignOff ? "Certifying..." : "Certify & Complete Loading"}
                 </button>
               </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
+
+      {/* ─── Window of Approved with Green Tick & "Scan More" Button ─── */}
+      <Modal
+        isOpen={isApprovedSuccessModalOpen}
+        onOpenChange={(open) => {
+          if (!open) handleScanMore();
+        }}
+      >
+        <Modal.Backdrop className="backdrop-blur-md z-50 p-4">
+          <Modal.Container size="md" className="max-w-lg w-full">
+            <Modal.Dialog className="bg-slate-900 border border-emerald-500/50 rounded-3xl shadow-2xl p-6 sm:p-8 space-y-5 text-center animate-in zoom-in-95 duration-200">
+              {/* Big Animated Green Tick */}
+              <div className="relative mx-auto w-24 h-24 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full bg-emerald-500/25 animate-ping opacity-75" />
+                <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-emerald-600 to-emerald-400 border-4 border-emerald-300 shadow-2xl shadow-emerald-500/40 flex items-center justify-center text-slate-950">
+                  <CheckCircle2 className="w-14 h-14 text-white stroke-[2.5]" />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-black uppercase tracking-widest text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 rounded-full inline-block">
+                  Status: eligible_exit
+                </span>
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  Loading Approved &amp; Certified!
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-sm mx-auto leading-relaxed">
+                  All {approvedModalData?.totalBags} serialized sacks have been physically verified by individual QR scan. Consignment is certified for departure.
+                </p>
+              </div>
+
+              {/* Verified Consignment Summary Card */}
+              <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 text-left space-y-2.5 text-xs">
+                <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                  <span className="text-slate-400">Challan Reference:</span>
+                  <div className="flex items-center gap-1.5 font-mono font-black text-white">
+                    <span>{approvedModalData?.challanNumber}</span>
+                    <span className="text-[10px] text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
+                      {approvedModalData?.qrId}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Consignee FPS:</span>
+                  <span className="font-semibold text-slate-200 truncate max-w-[220px]">
+                    {approvedModalData?.fpsName}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Carrier Vehicle:</span>
+                  <span className="font-mono font-bold text-white">
+                    {approvedModalData?.vehicleNumber}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Total Sacks Loaded:</span>
+                  <span className="font-mono font-black text-emerald-400">
+                    {approvedModalData?.totalBags} Bags (100% Physically Verified)
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[11px]">
+                  <span className="text-slate-400">Loading Lead:</span>
+                  <span className="text-slate-300 font-medium">
+                    {approvedModalData?.supervisor}
+                  </span>
+                </div>
+              </div>
+
+              {/* Status Note */}
+              <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-[11px] text-emerald-200 text-left flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <span>
+                  <strong>Challan QR Updated:</strong> The status record in this Challan's QR is now marked as <code className="font-mono font-bold text-white bg-emerald-900/60 px-1.5 py-0.5 rounded">eligible_exit</code>. The Exit Gate Guard at <code className="text-white font-mono">/scan</code> can now scan this Challan QR and approve gate exit.
+                </span>
+              </div>
+
+              {/* Action Buttons: "Scan More" */}
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleScanMore}
+                  className="w-full sm:flex-1 py-3 px-4 rounded-xl font-black text-sm bg-gradient-to-r from-emerald-500 to-emerald-400 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 shadow-lg shadow-emerald-500/25 active:scale-95 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Scan className="w-4 h-4" />
+                  Scan More
+                </button>
+
+                {activeChallan && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setViewingChallanModal(activeChallan);
+                    }}
+                    className="w-full sm:w-auto py-3 px-4 rounded-xl font-bold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    View Challan
+                  </button>
+                )}
+              </div>
             </Modal.Dialog>
           </Modal.Container>
         </Modal.Backdrop>

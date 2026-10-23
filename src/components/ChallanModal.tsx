@@ -38,19 +38,30 @@ export function ChallanModal({
 
   const qrId = challan.qrId || `QR-${challan.challanNumber.replace(/\D/g, "") || "1001"}`;
 
-  // Real, standards-compliant JSON payload for camera scanner with qrId
+  const isApprovedLoading = challan.loadingStatus === "LOADED";
+  const qrStatusRecord = isApprovedLoading
+    ? "eligible_exit"
+    : challan.loadingStatus === "IN_PROGRESS"
+    ? "loading_in_progress"
+    : "pending_loading";
+
+  // Official Delivery Challan QR Payload with dynamic status record
   const qrData = JSON.stringify({
-    type: "GATE_PASS",
+    type: "DELIVERY_CHALLAN",
     qrId: qrId,
     challanNo: challan.challanNumber,
+    status: qrStatusRecord,
+    loadingStatus: challan.loadingStatus || "PENDING",
+    gateStatus: challan.gateStatus || "PENDING_EXIT",
     fps: challan.fpsName,
     fpsId: challan.fpsId,
     commodity: challan.commodity,
     qty: challan.totalQuantity,
+    bags: Math.round(challan.totalQuantity * 2),
     vehicle: challan.vehicleNumber || "DL-1LM-4402",
     driver: challan.driverName || "Authorized Transporter",
     date: challan.dispatchDate,
-    status: challan.gateStatus || "PENDING_EXIT",
+    supervisor: challan.loadingSupervisor || "",
     hash: `SEC-${challan.challanNumber.replace(/\D/g, "") || "8821"}-${challan.totalQuantity}`,
   });
 
@@ -386,7 +397,7 @@ export function ChallanModal({
                   </table>
                 </div>
 
-                {/* Gate Pass Verification QR Code & Security Clear Box */}
+                {/* Delivery Challan Verification QR Code & Security Clear Box */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-lg border-2 border-dashed border-zinc-300 bg-zinc-50">
                   <div className="flex items-center gap-4">
                     <div className="flex flex-col items-center shrink-0">
@@ -395,25 +406,30 @@ export function ChallanModal({
                         {qrId}
                       </div>
                     </div>
-                    <div className="space-y-1 text-xs">
+                    <div className="space-y-1.5 text-xs">
                       <div className="flex items-center gap-1.5 font-black text-sm text-zinc-950">
                         <QrCode className="w-4 h-4 text-emerald-700" />
-                        Official Gate Pass QR Code
+                        Official Delivery Challan QR Code
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-semibold text-zinc-600">Scan QR or Verify QR ID:</span>
-                        <span className="font-mono text-xs font-black text-emerald-900 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-xs font-black text-zinc-900 bg-zinc-200 px-1.5 py-0.5 rounded border border-zinc-300">
                           {qrId}
                         </span>
+                        {isApprovedLoading ? (
+                          <span className="font-mono text-[10px] font-black text-emerald-900 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300 flex items-center gap-1">
+                            ✓ STATUS: eligible_exit
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[10px] font-black text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 flex items-center gap-1">
+                            ⚠ STATUS: pending_loading
+                          </span>
+                        )}
                       </div>
                       <p className="text-[11px] text-zinc-600 leading-snug">
-                        Scan at <strong>Godown Exit Gate Post</strong> via camera scanner or enter QR ID at <code>/scan</code>.
+                        Scan at <strong>Godown Exit Gate Post</strong> (<code>/scan</code>) for exit clearance. Gate clearance requires <code>eligible_exit</code> status certified by the loading dock.
                       </p>
                       <div className="text-[10px] font-mono text-zinc-500">
                         DIGITAL VERIFICATION HASH: <strong>SEC-{challan.challanNumber}-{challan.totalQuantity}Q</strong>
-                      </div>
-                      <div className="text-[10px] text-emerald-800 font-bold pt-0.5">
-                        ✓ 256-Bit Encrypted ePDS Statutory Seal
                       </div>
                     </div>
                   </div>

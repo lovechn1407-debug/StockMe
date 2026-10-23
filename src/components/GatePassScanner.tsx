@@ -54,8 +54,10 @@ export function GatePassScanner({
 
   // Scan Result States
   const [scannedChallan, setScannedChallan] = useState<DeliveryChallan | null>(null);
+  const [isEligibleExit, setIsEligibleExit] = useState<boolean>(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [unrecognizedCode, setUnrecognizedCode] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<{ title: string; message: string; isSackQr?: boolean } | null>(null);
   const [isMarkingExit, setIsMarkingExit] = useState(false);
   const [viewingChallanModal, setViewingChallanModal] = useState<DeliveryChallan | null>(null);
 
@@ -91,31 +93,56 @@ export function GatePassScanner({
     }
   };
 
-  // Process decoded QR or text (supports JSON payload, QR ID, or Challan Number)
+  // Process decoded QR or text (Challan QR verification with status record)
   const processDecodedText = (decodedText: string) => {
     setIsVerifying(true);
     setUnrecognizedCode(null);
+    setRejectionReason(null);
     setScannedChallan(null);
 
     const raw = decodedText.trim();
+    if (!raw) {
+      setIsVerifying(false);
+      return;
+    }
+
+    // 1. Check if user scanned an individual sack QR (e.g. BATCH-WHT-101_001)
+    const underscoreIndex = raw.lastIndexOf("_");
+    if (underscoreIndex > 0 && !raw.startsWith("{")) {
+      const serialPart = raw.substring(underscoreIndex + 1).trim();
+      if (/^\d+$/.test(serialPart)) {
+        playSound("error");
+        if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+        setRejectionReason({
+          title: "Sack QR Scanned — Challan QR Required",
+          message: `Scanned code "${raw}" is an individual Sack QR. The Exit Gate Scanner only processes the official Delivery Challan QR code from Form PDS-DC-04.`,
+          isSackQr: true,
+        });
+        setIsVerifying(false);
+        stopCamera();
+        return;
+      }
+    }
+
     let targetChallanNo = raw;
     let targetQrId = "";
+    let parsedPayload: any = null;
 
-    // 1. Check if JSON payload from official Challan QR
+    // 2. Parse JSON payload from official Delivery Challan QR
     try {
-      const parsed = JSON.parse(raw);
-      if (parsed.qrId) {
-        targetQrId = String(parsed.qrId).trim();
+      parsedPayload = JSON.parse(raw);
+      if (parsedPayload.qrId) {
+        targetQrId = String(parsedPayload.qrId).trim();
       }
-      if (parsed.challanNo) {
-        targetChallanNo = String(parsed.challanNo).trim();
-      } else if (parsed.dc) {
-        targetChallanNo = String(parsed.dc).trim();
-      } else if (parsed.id) {
-        targetChallanNo = String(parsed.id).trim();
+      if (parsedPayload.challanNo) {
+        targetChallanNo = String(parsedPayload.challanNo).trim();
+      } else if (parsedPayload.dc) {
+        targetChallanNo = String(parsedPayload.dc).trim();
+      } else if (parsedPayload.id) {
+        targetChallanNo = String(parsedPayload.id).trim();
       }
     } catch {
-      // 2. Not JSON: check if raw text is or contains a QR ID (e.g. QR-1001, QR-7429, QR1001)
+      // 3. Not JSON: check if raw text is or contains a QR ID (e.g. QR-1001, QR-7429)
       const qrMatch = raw.match(/QR[- ]?([A-Za-z0-9-]+)/i);
       if (qrMatch) {
         targetQrId = `QR-${qrMatch[1]}`;
@@ -133,7 +160,7 @@ export function GatePassScanner({
     const cleanQr = targetQrId.toLowerCase();
     const rawDigits = raw.replace(/\D/g, "");
 
-    // 3. Match against available challans
+    // 4. Match against available challans in depot registry
     const found = challans.find((c) => {
       const cQr = (c.qrId || `QR-${c.challanNumber.replace(/\D/g, "")}`).toLowerCase();
       const cQrDigits = cQr.replace(/\D/g, "");
@@ -141,19 +168,15 @@ export function GatePassScanner({
       const cId = c.id.toLowerCase();
       const cDigits = c.challanNumber.replace(/\D/g, "");
 
-      // Match by QR ID (direct or normalized)
       if (cleanQr && (cQr === cleanQr || cQr.includes(cleanQr) || cleanQr.includes(cQr))) {
         return true;
       }
-      // Match by Challan Number or ID
       if (cleanChallan && (cChallan === cleanChallan || cId === cleanChallan || cChallan.includes(cleanChallan))) {
         return true;
       }
-      // Match by raw string
       if (cleanRaw && (cQr === cleanRaw || cChallan === cleanRaw || cId === cleanRaw)) {
         return true;
       }
-      // Match by numeric sequence if >= 3 digits (e.g. 1001 or 1002 or 7429)
       if (rawDigits.length >= 3) {
         if (
           cDigits === rawDigits ||
@@ -169,10 +192,22 @@ export function GatePassScanner({
     });
 
     if (found) {
-      playSound("success");
+      // 5. Evaluate the status record:
+      // When loading is approved, status is "eligible_exit" (or loadingStatus is "LOADED")
+      const isLoadedInDb = found.loadingStatus === "LOADED";
+      const isLoadedInQr = parsedPayload?.status === "eligible_exit";
+      const eligible = isLoadedInDb || isLoadedInQr;
+
+      setIsEligibleExit(eligible);
       setScannedChallan(found);
-      // Stop camera to conserve resources while displaying verified credentials
       stopCamera();
+
+      if (eligible) {
+        playSound("success");
+      } else {
+        playSound("error");
+        if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
+      }
     } else {
       playSound("error");
       setUnrecognizedCode(raw);
@@ -392,14 +427,14 @@ export function GatePassScanner({
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                 <h1 className="text-sm md:text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  iPDS Gate Pass Security Scanner
+                  ePDS Challan Exit Gate Scanner
                 </h1>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
                   /scan
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 hidden sm:block">
-                State Buffer Godown Unit-4 • Physical Exit Gate Verification
+                State Buffer Godown Unit-4 • Delivery Challan Exit Verification
               </p>
             </div>
           </div>
@@ -501,7 +536,7 @@ export function GatePassScanner({
                   </div>
                   <div className="text-center">
                     <span className="text-[11px] font-bold tracking-wider uppercase text-emerald-400/90 bg-black/60 px-3 py-1 rounded-full border border-emerald-500/30">
-                      Center Gate Pass QR in Frame
+                      Center Challan QR in Frame
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -591,9 +626,9 @@ export function GatePassScanner({
             {activeTab === "manual" && (
               <Card className="max-w-md mx-auto p-5 border border-slate-800 bg-slate-900 rounded-xl space-y-4">
                 <div>
-                  <h3 className="text-sm font-bold text-white mb-1">Verify by QR ID or Challan Number</h3>
+                  <h3 className="text-sm font-bold text-white mb-1">Verify by Challan QR ID or Challan Number</h3>
                   <p className="text-xs text-slate-400">
-                    Type or paste the <strong>QR ID</strong> (e.g. QR-1001) or <strong>Challan Number</strong> (e.g. DC-2026-1001) printed on the Gate Pass.
+                    Type or paste the <strong>Challan QR ID</strong> (e.g. QR-1001) or <strong>Challan Number</strong> (e.g. DC-2026-1001) printed on Form PDS-DC-04.
                   </p>
                 </div>
 
@@ -662,9 +697,9 @@ export function GatePassScanner({
                   <Upload className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-white">Upload Gate Pass Photo</h3>
+                  <h3 className="font-bold text-sm text-white">Upload Delivery Challan Photo</h3>
                   <p className="text-xs text-slate-400 mt-1">
-                    Select a snapshot or document containing the Gate Pass QR code to verify.
+                    Select a snapshot or document containing the Delivery Challan QR code to verify.
                   </p>
                 </div>
                 <Button
@@ -679,48 +714,77 @@ export function GatePassScanner({
           </div>
         )}
 
-        {/* ─── CASE 1: VERIFIED GATE PASS CARD ─── */}
+        {/* ─── CASE 1: VERIFIED CHALLAN CARD (APPROVED OR REJECTED) ─── */}
         {scannedChallan && (
           <div className="max-w-2xl mx-auto space-y-4 animate-in fade-in zoom-in-95 duration-200">
             {/* Verification Status Banner */}
-            <div className={`p-4 md:p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl ${
-              scannedChallan.gateStatus === "CLEARED_EXIT"
-                ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-200"
-                : "bg-amber-950/40 border-amber-500/50 text-amber-200"
-            }`}>
+            <div
+              className={`p-4 md:p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl ${
+                !isEligibleExit
+                  ? "bg-rose-950/60 border-rose-500/60 text-rose-200"
+                  : scannedChallan.gateStatus === "CLEARED_EXIT"
+                  ? "bg-emerald-950/40 border-emerald-500/50 text-emerald-200"
+                  : "bg-emerald-950/50 border-emerald-500/60 text-emerald-100"
+              }`}
+            >
               <div className="flex items-center gap-3.5 text-center sm:text-left">
-                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
-                  scannedChallan.gateStatus === "CLEARED_EXIT"
-                    ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
-                    : "bg-amber-500/20 border-amber-500/40 text-amber-400"
-                }`}>
-                  <CheckCircle2 className="w-7 h-7" />
+                <div
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
+                    !isEligibleExit
+                      ? "bg-rose-500/20 border-rose-500/40 text-rose-400"
+                      : "bg-emerald-500/20 border-emerald-500/40 text-emerald-400"
+                  }`}
+                >
+                  {!isEligibleExit ? (
+                    <ShieldAlert className="w-7 h-7" />
+                  ) : (
+                    <CheckCircle2 className="w-7 h-7" />
+                  )}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                  <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
                     <h3 className="text-base md:text-lg font-black tracking-tight text-white uppercase">
-                      Official Gate Pass Verified
+                      {!isEligibleExit
+                        ? "GATE EXIT REJECTED — NOT ELIGIBLE FOR EXIT"
+                        : "CHALLAN EXIT PERMIT APPROVED"}
                     </h3>
                     <Chip
                       size="sm"
-                      color={scannedChallan.gateStatus === "CLEARED_EXIT" ? "success" : "warning"}
+                      color={
+                        !isEligibleExit
+                          ? "danger"
+                          : scannedChallan.gateStatus === "CLEARED_EXIT"
+                          ? "success"
+                          : "success"
+                      }
                       variant="primary"
                       className="font-bold text-[10px]"
                     >
-                      {scannedChallan.gateStatus === "CLEARED_EXIT" ? "EXIT CLEARED" : "PENDING GATE EXIT"}
+                      {!isEligibleExit
+                        ? "STATUS: NOT ELIGIBLE (LOADING PENDING)"
+                        : scannedChallan.gateStatus === "CLEARED_EXIT"
+                        ? "EXIT CLEARED"
+                        : "STATUS: eligible_exit"}
                     </Chip>
                   </div>
                   <p className="text-xs opacity-90">
-                    Authentic Central iPDS Dispatch Order • Ready for Gate Inspection
+                    {!isEligibleExit
+                      ? "Loading verification has NOT been certified. Physical sacks have not been verified via QR scan at loading dock."
+                      : "Physical loading certified by loading supervisor. All serialized sacks verified & authorized for departure."}
                   </p>
                 </div>
               </div>
 
-              {/* Action: Approve Exit Button */}
-              {scannedChallan.gateStatus !== "CLEARED_EXIT" ? (
+              {/* Action: Approve Exit Button or Block Notice */}
+              {!isEligibleExit ? (
+                <div className="px-3.5 py-2 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 shrink-0">
+                  <ShieldAlert className="w-4 h-4 text-rose-400" />
+                  <span>Exit Prohibited</span>
+                </div>
+              ) : scannedChallan.gateStatus !== "CLEARED_EXIT" ? (
                 <Button
                   variant="primary"
-                  className="font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg w-full sm:w-auto"
+                  className="font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg w-full sm:w-auto shrink-0"
                   isDisabled={isMarkingExit}
                   onPress={() => handleApproveGateExit(scannedChallan)}
                 >
@@ -728,7 +792,7 @@ export function GatePassScanner({
                   {isMarkingExit ? "Recording Exit..." : "Approve & Mark Gate Exit"}
                 </Button>
               ) : (
-                <div className="text-right text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                <div className="text-right text-xs text-emerald-400 font-semibold flex items-center gap-1 shrink-0">
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Departure Recorded</span>
                 </div>
@@ -740,22 +804,27 @@ export function GatePassScanner({
               {/* Header Details */}
               <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-800 pb-4">
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Challan Reference &amp; QR Identifier</span>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <div className="font-mono text-xl font-black text-white">{scannedChallan.challanNumber}</div>
-                    <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Challan Reference &amp; QR Identifier
+                  </span>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    <div className="font-mono text-xl font-black text-white">
+                      {scannedChallan.challanNumber}
+                    </div>
+                    <span className="font-mono text-xs font-black px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30 flex items-center gap-1">
                       <QrCode className="w-3 h-3" />
-                      {scannedChallan.qrId || `QR-${scannedChallan.challanNumber.replace(/\D/g, "") || "1001"}`}
+                      {scannedChallan.qrId ||
+                        `QR-${scannedChallan.challanNumber.replace(/\D/g, "") || "1001"}`}
                     </span>
                     <Chip
                       size="sm"
-                      color={scannedChallan.loadingStatus === "LOADED" ? "success" : "warning"}
+                      color={isEligibleExit ? "success" : "danger"}
                       variant="soft"
                       className="font-bold text-[10px]"
                     >
-                      {scannedChallan.loadingStatus === "LOADED"
-                        ? `✓ Loading Verified (${scannedChallan.loadingSupervisor || "Dock Lead"})`
-                        : "⚠ Loading Dock Sign-Off Pending"}
+                      {isEligibleExit
+                        ? `✓ eligible_exit (${scannedChallan.loadingSupervisor || "Dock Lead"})`
+                        : "✕ Loading Verification Pending"}
                     </Chip>
                   </div>
                   <div className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
@@ -765,15 +834,30 @@ export function GatePassScanner({
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Consignment</span>
+                  <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                    Total Consignment
+                  </span>
                   <div className="text-2xl font-black text-primary font-mono">
-                    {scannedChallan.totalQuantity} <span className="text-sm font-normal text-slate-300">Quintals</span>
+                    {scannedChallan.totalQuantity}{" "}
+                    <span className="text-sm font-normal text-slate-300">Quintals</span>
                   </div>
                   <span className="text-xs font-semibold text-slate-400">
                     ({Math.round(scannedChallan.totalQuantity * 2)} Standard 50kg Bags)
                   </span>
                 </div>
               </div>
+
+              {/* Warning box if loading not approved */}
+              {!isEligibleExit && (
+                <div className="p-3.5 rounded-xl bg-rose-950/40 border border-rose-500/40 text-xs text-rose-200 flex items-start gap-2.5">
+                  <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-bold text-rose-100">Exit Clearance Prohibited:</strong>
+                    This consignment has NOT completed the physical sack verification process. Sacks must be scanned one-by-one in the Loader Portal (<code>/loader</code>) and certified by the loading dock before this truck is permitted to exit the godown.
+                  </div>
+                </div>
+              )}
+
 
               {/* Vehicle & Consignee 2-Column Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
@@ -850,35 +934,41 @@ export function GatePassScanner({
                   onPress={() => {
                     setScannedChallan(null);
                     setUnrecognizedCode(null);
+                    setRejectionReason(null);
                     if (activeTab === "camera") startCamera();
                   }}
                 >
                   <Scan className="w-3.5 h-3.5 mr-1" />
-                  Scan Next Gate Pass
+                  Scan Next Challan
                 </Button>
               </div>
             </Card>
           </div>
         )}
 
-        {/* ─── CASE 2: UNRECOGNIZED / INVALID CODE ─── */}
-        {unrecognizedCode && !scannedChallan && (
+        {/* ─── CASE 2: UNRECOGNIZED / INVALID CODE / SACK QR REJECTED ─── */}
+        {(unrecognizedCode || rejectionReason) && !scannedChallan && (
           <Card className="max-w-md mx-auto p-6 bg-red-950/30 border border-red-500/40 rounded-2xl shadow-xl text-center space-y-4 animate-in fade-in zoom-in-95">
             <div className="w-14 h-14 rounded-2xl bg-red-500/20 border border-red-500/40 text-red-400 mx-auto flex items-center justify-center">
               <ShieldAlert className="w-8 h-8" />
             </div>
 
             <div>
-              <h3 className="text-lg font-black text-white">Unverified or Invalid Gate Pass</h3>
+              <h3 className="text-lg font-black text-white">
+                {rejectionReason?.title || "Unverified or Invalid Challan QR"}
+              </h3>
               <p className="text-xs text-red-200/90 mt-1">
-                No active delivery dispatch record matching this code was found in the State Buffer Godown ledger.
+                {rejectionReason?.message ||
+                  "No active delivery dispatch record matching this code was found in the State Buffer Godown ledger."}
               </p>
             </div>
 
-            <div className="p-3 rounded-lg bg-black/50 border border-red-500/30 text-left font-mono text-xs text-slate-300 break-all">
-              <span className="text-[10px] text-slate-500 uppercase font-sans font-bold block mb-1">Scanned Value:</span>
-              {unrecognizedCode}
-            </div>
+            {unrecognizedCode && (
+              <div className="p-3 rounded-lg bg-black/50 border border-red-500/30 text-left font-mono text-xs text-slate-300 break-all">
+                <span className="text-[10px] text-slate-500 uppercase font-sans font-bold block mb-1">Scanned Value:</span>
+                {unrecognizedCode}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button
@@ -886,6 +976,7 @@ export function GatePassScanner({
                 className="flex-1"
                 onPress={() => {
                   setUnrecognizedCode(null);
+                  setRejectionReason(null);
                   setActiveTab("manual");
                 }}
               >
@@ -893,9 +984,10 @@ export function GatePassScanner({
               </Button>
               <Button
                 variant="primary"
-                className="flex-1"
+                className="flex-1 font-bold"
                 onPress={() => {
                   setUnrecognizedCode(null);
+                  setRejectionReason(null);
                   setActiveTab("camera");
                   startCamera();
                 }}

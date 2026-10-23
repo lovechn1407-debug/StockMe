@@ -27,7 +27,6 @@ import type { DeliveryChallan, CommodityType } from "../types";
 import { COMMODITIES } from "../types";
 import { updateChallanGateExit } from "../lib/db";
 import { ChallanModal } from "./ChallanModal";
-import { QRCodeSvg } from "./QRCodeSvg";
 
 interface TabGeneratedChallansProps {
   challans: DeliveryChallan[];
@@ -45,9 +44,6 @@ export function TabGeneratedChallans({
 
   // Selected Challan for Full Official View / Print Modal
   const [selectedChallanForPrint, setSelectedChallanForPrint] = useState<DeliveryChallan | null>(null);
-
-  // Selected Challan for Quick Gate Pass QR Modal
-  const [selectedChallanForQR, setSelectedChallanForQR] = useState<DeliveryChallan | null>(null);
 
   // Filtered Challans
   const filteredChallans = useMemo(() => {
@@ -461,16 +457,6 @@ export function TabGeneratedChallans({
                               Print Challan
                             </Button>
 
-                            {/* View Gate Pass QR */}
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="text-xs font-semibold cursor-pointer"
-                              onPress={() => setSelectedChallanForQR(challan)}
-                            >
-                              <QrCode className="w-3.5 h-3.5" />
-                            </Button>
-
                             {/* Quick Mark Exit button if pending */}
                             {!isCleared && (
                               <Button
@@ -502,75 +488,6 @@ export function TabGeneratedChallans({
           onClose={() => setSelectedChallanForPrint(null)}
           onOpenScanner={onOpenScanner}
         />
-      )}
-
-      {/* ─── Quick Gate Pass QR Modal ─── */}
-      {selectedChallanForQR && (
-        <Modal
-          isOpen={Boolean(selectedChallanForQR)}
-          onOpenChange={(open) => !open && setSelectedChallanForQR(null)}
-        >
-          <Modal.Backdrop>
-            <Modal.Container size="sm">
-              <Modal.Dialog>
-                <Modal.Header>
-                  <div className="flex items-center gap-2">
-                    <QrCode className="w-5 h-5 text-primary" />
-                    <Modal.Heading className="text-base font-bold">
-                      Gate Pass QR — {selectedChallanForQR.challanNumber}
-                    </Modal.Heading>
-                  </div>
-                  <Modal.CloseTrigger />
-                </Modal.Header>
-                <Modal.Body className="text-center p-6 space-y-4">
-                  <div className="flex justify-center">
-                    <QRCodeSvg
-                      value={JSON.stringify({
-                        type: "GATE_PASS",
-                        challanNo: selectedChallanForQR.challanNumber,
-                        fps: selectedChallanForQR.fpsName,
-                        fpsId: selectedChallanForQR.fpsId,
-                        commodity: selectedChallanForQR.commodity,
-                        qty: selectedChallanForQR.totalQuantity,
-                        vehicle: selectedChallanForQR.vehicleNumber || "DL-1LM-4402",
-                        date: selectedChallanForQR.dispatchDate,
-                        status: selectedChallanForQR.gateStatus || "PENDING_EXIT",
-                      })}
-                      size={200}
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-mono font-black text-base text-foreground">
-                      {selectedChallanForQR.challanNumber}
-                    </h4>
-                    <p className="text-xs text-muted mt-0.5">
-                      {selectedChallanForQR.fpsName} • {selectedChallanForQR.totalQuantity} Q {selectedChallanForQR.commodity}
-                    </p>
-                    <p className="text-[11px] text-muted mt-1">
-                      Present this scannable QR code at the Godown Exit Gate post (<code>/scan</code>).
-                    </p>
-                  </div>
-                </Modal.Body>
-                <Modal.Footer className="flex justify-between">
-                  <Button variant="secondary" onPress={() => setSelectedChallanForQR(null)}>
-                    Close
-                  </Button>
-                  <Button
-                    variant="primary"
-                    onPress={() => {
-                      const c = selectedChallanForQR;
-                      setSelectedChallanForQR(null);
-                      setSelectedChallanForPrint(c);
-                    }}
-                  >
-                    <Printer className="w-3.5 h-3.5 mr-1" />
-                    Print Full Challan
-                  </Button>
-                </Modal.Footer>
-              </Modal.Dialog>
-            </Modal.Container>
-          </Modal.Backdrop>
-        </Modal>
       )}
     </div>
   );
