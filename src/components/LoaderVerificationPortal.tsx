@@ -31,6 +31,7 @@ import {
   Sparkles,
   Info,
   Hash,
+  Trash2,
 } from "lucide-react";
 import type { DeliveryChallan, Batch } from "../types";
 import { updateChallanLoadingStatus } from "../lib/db";
@@ -90,6 +91,30 @@ export function LoaderVerificationPortal({
   const html5QrCodeRef = useRef<Html5Qrcode | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Authoritative synchronous Ref of all scanned sack IDs (uppercase)
+  // This guarantees that rapid camera frames (15 FPS) cannot bypass duplicate validation
+  const scannedSackIdsRef = useRef<Set<string>>(new Set<string>());
+  const lastScannedTextRef = useRef<string>("");
+  const lastScannedTimeRef = useRef<number>(0);
+  const isProcessingScanRef = useRef<boolean>(false);
+
+  // Stale-closure protection refs for camera scanner callback
+  const activeChallanRef = useRef<DeliveryChallan | null>(null);
+  const batchesRef = useRef<Batch[]>(batches);
+  const challansRef = useRef<DeliveryChallan[]>(challans);
+
+  useEffect(() => {
+    activeChallanRef.current = activeChallan;
+  }, [activeChallan]);
+
+  useEffect(() => {
+    batchesRef.current = batches;
+  }, [batches]);
+
+  useEffect(() => {
+    challansRef.current = challans;
+  }, [challans]);
+
   // Active Challans that are pending or in progress
   const pendingLoadingChallans = useMemo(() => {
     return challans.filter((c) => c.loadingStatus !== "LOADED");
@@ -97,7 +122,7 @@ export function LoaderVerificationPortal({
 
   // Derived set of all unique sack IDs already scanned for active challan
   const scannedSackIds = useMemo(() => {
-    return scannedSacks.map((s) => s.sackId.toUpperCase());
+    return Array.from(new Set(scannedSacks.map((s) => s.sackId.toUpperCase())));
   }, [scannedSacks]);
 
   // Verified bags tally per batch (strictly derived from unique valid sack scans)
@@ -108,8 +133,13 @@ export function LoaderVerificationPortal({
         map[b.batchId] = 0;
       });
     }
+    const seen = new Set<string>();
     scannedSacks.forEach((s) => {
-      map[s.batchId] = (map[s.batchId] || 0) + 1;
+      const uId = s.sackId.toUpperCase();
+      if (!seen.has(uId)) {
+        seen.add(uId);
+        map[s.batchId] = (map[s.batchId] || 0) + 1;
+      }
     });
     return map;
   }, [activeChallan, scannedSacks]);
@@ -120,9 +150,10 @@ export function LoaderVerificationPortal({
     return Math.round(activeChallan.totalQuantity * 2);
   }, [activeChallan]);
 
-  // Total currently verified bags
+  // Total currently verified bags (strictly unique physical bags)
   const totalVerifiedBags = useMemo(() => {
-    return scannedSacks.length;
+    const uniqueIds = new Set(scannedSacks.map((s) => s.sackId.toUpperCase()));
+    return uniqueIds.size;
   }, [scannedSacks]);
 
   // Is active challan 100% loaded?
@@ -274,39 +305,66 @@ export function LoaderVerificationPortal({
   const handleSelectChallan = async (c: DeliveryChallan) => {
     await stopAndClearScanner();
     setActiveChallan(c);
+    activeChallanRef.current = c;
+    lastScannedTextRef.current = "";
+    lastScannedTimeRef.current = 0;
 
-    // Load persisted scanned sacks for this challan
+    // Load persisted scanned sacks for this challan (strictly deduplicating any past duplicates)
     try {
       const saved = localStorage.getItem(`stockme_loader_sacks_${c.id}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          setScannedSacks(parsed);
+          const seen = new Set<string>();
+          const deduped: ScannedSackEvent[] = [];
+          for (const item of parsed) {
+            const canonical = item.sackId ? String(item.sackId).trim().toUpperCase() : "";
+            if (canonical && !seen.has(canonical)) {
+              seen.add(canonical);
+              deduped.push({
+                ...item,
+                sackId: canonical,
+              });
+            }
+          }
+          scannedSackIdsRef.current = seen;
+          setScannedSacks(deduped);
+          // Clean up corrupted storage with strictly deduplicated set
+          localStorage.setItem(`stockme_loader_sacks_${c.id}`, JSON.stringify(deduped));
         } else {
+          scannedSackIdsRef.current = new Set();
           setScannedSacks([]);
         }
       } else if (c.verifiedBagsByBatch) {
         // If DB has bag tallies but no raw sack list, seed initial serials
         const generatedSacks: ScannedSackEvent[] = [];
+        const seen = new Set<string>();
         Object.entries(c.verifiedBagsByBatch).forEach(([batchId, count]) => {
           const item = c.batches.find((b) => b.batchId === batchId);
           for (let i = 1; i <= count; i++) {
             const pad = String(i).padStart(3, "0");
-            generatedSacks.push({
-              id: `SEEDED-${batchId}-${pad}`,
-              sackId: `${batchId}_${pad}`,
-              batchId,
-              serialNumber: pad,
-              bayLocation: item?.bayLocation || "BAY-01",
-              timestamp: Date.now() - (count - i) * 10000,
-            });
+            const sackId = `${batchId}_${pad}`.toUpperCase();
+            if (!seen.has(sackId)) {
+              seen.add(sackId);
+              generatedSacks.push({
+                id: `SEEDED-${batchId}-${pad}`,
+                sackId,
+                batchId,
+                serialNumber: pad,
+                bayLocation: item?.bayLocation || "BAY-01",
+                timestamp: Date.now() - (count - i) * 10000,
+              });
+            }
           }
         });
+        scannedSackIdsRef.current = seen;
         setScannedSacks(generatedSacks);
       } else {
+        scannedSackIdsRef.current = new Set();
         setScannedSacks([]);
       }
     } catch {
+      scannedSackIdsRef.current = new Set();
       setScannedSacks([]);
     }
 
@@ -339,11 +397,61 @@ export function LoaderVerificationPortal({
   const handleSwitchChallan = async () => {
     await stopAndClearScanner();
     setActiveChallan(null);
+    activeChallanRef.current = null;
+    scannedSackIdsRef.current = new Set();
     setScannedSacks([]);
     setFeedback(null);
+    lastScannedTextRef.current = "";
+    lastScannedTimeRef.current = 0;
     if (activeTab === "camera") {
       setTimeout(() => startCamera(facingMode), 200);
     }
+  };
+
+  // Remove an individual scanned sack
+  const handleRemoveSack = (sackIdToRemove: string) => {
+    const canonical = sackIdToRemove.trim().toUpperCase();
+    scannedSackIdsRef.current.delete(canonical);
+    const updated = scannedSacks.filter((s) => s.sackId.toUpperCase() !== canonical);
+    setScannedSacks(updated);
+    if (activeChallan) {
+      localStorage.setItem(`stockme_loader_sacks_${activeChallan.id}`, JSON.stringify(updated));
+    }
+    playSound("warning");
+    setFeedback({
+      type: "INFO",
+      title: "Sack Removed",
+      message: `Sack [${canonical}] was removed from the consignment. You may re-scan it if needed.`,
+    });
+  };
+
+  // Clear all scanned sacks for active challan
+  const handleClearAllSacks = () => {
+    if (!activeChallan) return;
+    if (scannedSacks.length === 0) return;
+    const confirm = window.confirm(
+      `Clear all ${scannedSacks.length} scanned sacks for Challan #${activeChallan.challanNumber}? This will reset the loading count to 0 so you can re-scan fresh sacks.`
+    );
+    if (!confirm) return;
+
+    scannedSackIdsRef.current.clear();
+    setScannedSacks([]);
+    lastScannedTextRef.current = "";
+    lastScannedTimeRef.current = 0;
+    localStorage.removeItem(`stockme_loader_sacks_${activeChallan.id}`);
+
+    activeChallan.verifiedBagsByBatch = {};
+    if (activeChallan.loadingStatus === "IN_PROGRESS" || activeChallan.loadingStatus === "LOADED") {
+      activeChallan.loadingStatus = "PENDING";
+      updateChallanLoadingStatus(activeChallan.id, "PENDING", supervisorName, {}).catch(console.warn);
+    }
+
+    playSound("warning");
+    setFeedback({
+      type: "INFO",
+      title: "All Sacks Cleared",
+      message: `All scanned sacks for Challan #${activeChallan.challanNumber} have been reset to 0. Ready for fresh scanning.`,
+    });
   };
 
   // Process any scanned text (Challan QR or Sack QR)
@@ -351,14 +459,35 @@ export function LoaderVerificationPortal({
     const raw = decodedText.trim();
     if (!raw) return;
 
-    // SCENARIO 1: No Challan Selected Yet -> Look up Challan
-    if (!activeChallan) {
-      lookupAndSelectChallan(raw);
+    const now = Date.now();
+
+    // 1. Silent debounce: If exact same code scanned within 2.5 seconds, drop frame
+    // This stops continuous camera video frames from spamming duplicates or buzzing
+    if (raw === lastScannedTextRef.current && now - lastScannedTimeRef.current < 2500) {
       return;
     }
 
-    // SCENARIO 2: Challan Active -> Decode Sack QR in "BATCHID_Serialnumber" format
-    verifyScannedSack(raw);
+    // 2. Atomic processing lock: Prevent overlapping frames
+    if (isProcessingScanRef.current) {
+      return;
+    }
+
+    isProcessingScanRef.current = true;
+    lastScannedTextRef.current = raw;
+    lastScannedTimeRef.current = now;
+
+    try {
+      const currentChallan = activeChallanRef.current;
+      if (!currentChallan) {
+        lookupAndSelectChallan(raw);
+      } else {
+        verifyScannedSack(raw, currentChallan);
+      }
+    } finally {
+      setTimeout(() => {
+        isProcessingScanRef.current = false;
+      }, 350);
+    }
   };
 
   // Lookup Challan by QR / ID / Number
@@ -384,7 +513,7 @@ export function LoaderVerificationPortal({
     const cleanQr = targetQrId.toLowerCase();
     const rawDigits = raw.replace(/\D/g, "");
 
-    const found = challans.find((c) => {
+    const found = challansRef.current.find((c) => {
       const cQr = (c.qrId || `QR-${c.challanNumber.replace(/\D/g, "")}`).toLowerCase();
       const cQrDigits = cQr.replace(/\D/g, "");
       const cChallan = c.challanNumber.toLowerCase();
@@ -428,9 +557,7 @@ export function LoaderVerificationPortal({
   };
 
   // Verify scanned individual sack in "BATCHID_Serialnumber" format
-  const verifyScannedSack = (raw: string) => {
-    if (!activeChallan) return;
-
+  const verifyScannedSack = (raw: string, currentChallan: DeliveryChallan) => {
     let rawSackId = raw.trim();
     let scannedBatchId = "";
     let scannedSerial = "";
@@ -449,7 +576,7 @@ export function LoaderVerificationPortal({
     }
 
     // Check if user scanned another Challan QR while in active consignment
-    const isAnotherChallan = challans.some(
+    const isAnotherChallan = challansRef.current.some(
       (c) =>
         c.challanNumber.toLowerCase() === rawSackId.toLowerCase() ||
         (c.qrId && c.qrId.toLowerCase() === rawSackId.toLowerCase())
@@ -466,7 +593,7 @@ export function LoaderVerificationPortal({
       scannedSerial = rawSackId.substring(underscoreIndex + 1).trim();
     } else {
       // If user scanned something without an underscore (e.g. raw BATCH-WHT-101):
-      const matchedAllocated = activeChallan.batches.find(
+      const matchedAllocated = currentChallan.batches.find(
         (b) => b.batchId.toUpperCase() === rawSackId.toUpperCase()
       );
       if (matchedAllocated) {
@@ -484,7 +611,7 @@ export function LoaderVerificationPortal({
       setFeedback({
         type: "INVALID_FORMAT",
         title: "UNRECOGNIZED SACK QR FORMAT",
-        message: `Scanned code "${rawSackId}" is invalid. Every grain sack must carry a unique QR code formatted as "BATCHID_Serialnumber" (e.g. "${activeChallan.batches[0]?.batchId || "BATCH-WHT-101"}_001").`,
+        message: `Scanned code "${rawSackId}" is invalid. Every grain sack must carry a unique QR code formatted as "BATCHID_Serialnumber" (e.g. "${currentChallan.batches[0]?.batchId || "BATCH-WHT-101"}_001").`,
         scannedRaw: rawSackId,
       });
       return;
@@ -492,8 +619,8 @@ export function LoaderVerificationPortal({
 
     const canonicalSackId = `${scannedBatchId}_${scannedSerial}`.toUpperCase();
 
-    // ─── VALIDATION 1: DUPLICATE SACK DETECTION ───
-    if (scannedSackIds.includes(canonicalSackId)) {
+    // ─── VALIDATION 1: DUPLICATE SACK DETECTION (SYNCHRONOUS REF CHECK) ───
+    if (scannedSackIdsRef.current.has(canonicalSackId)) {
       playSound("error");
       if (navigator.vibrate) navigator.vibrate([250, 100, 250]);
       setFeedback({
@@ -506,14 +633,14 @@ export function LoaderVerificationPortal({
     }
 
     // ─── VALIDATION 2: MULTI-BATCH MATCHING IN ACTIVE CHALLAN ───
-    const allocatedBatch = activeChallan.batches.find(
+    const allocatedBatch = currentChallan.batches.find(
       (b) => b.batchId.toUpperCase() === scannedBatchId.toUpperCase()
     );
 
     if (!allocatedBatch) {
       playSound("error");
       if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-      const foundInDepot = batches.find((b) => b.id.toUpperCase() === scannedBatchId.toUpperCase());
+      const foundInDepot = batchesRef.current.find((b) => b.id.toUpperCase() === scannedBatchId.toUpperCase());
       const depotInfo = foundInDepot
         ? ` (${foundInDepot.commodity} at ${foundInDepot.bayLocation})`
         : "";
@@ -521,7 +648,7 @@ export function LoaderVerificationPortal({
       setFeedback({
         type: "WRONG_BATCH",
         title: "WRONG BATCH SACK REJECTED!",
-        message: `Sack [${canonicalSackId}] belongs to Batch [${scannedBatchId}]${depotInfo}, which is NOT authorized for Challan #${activeChallan.challanNumber}! Authorized batches for this truck: ${activeChallan.batches
+        message: `Sack [${canonicalSackId}] belongs to Batch [${scannedBatchId}]${depotInfo}, which is NOT authorized for Challan #${currentChallan.challanNumber}! Authorized batches for this truck: ${currentChallan.batches
           .map((b) => `${b.batchId} (${b.bayLocation})`)
           .join(", ")}.`,
         scannedRaw: canonicalSackId,
@@ -530,7 +657,7 @@ export function LoaderVerificationPortal({
     }
 
     // ─── VALIDATION 3: FUMIGATION / QUALITY LOCK ───
-    const liveBatch = batches.find(
+    const liveBatch = batchesRef.current.find(
       (b) => b.id.toUpperCase() === allocatedBatch.batchId.toUpperCase()
     );
     if (
@@ -549,7 +676,12 @@ export function LoaderVerificationPortal({
 
     // ─── VALIDATION 4: SPECIFIC BATCH QUOTA CEILING ───
     const maxBagsForThisBatch = Math.round(allocatedBatch.dispatchedQty * 2);
-    const currentBagsForThisBatch = verifiedBags[allocatedBatch.batchId] || 0;
+    // Count directly from synchronous Ref
+    const currentBagsForThisBatch = [...scannedSackIdsRef.current].filter((sId) => {
+      const idx = sId.lastIndexOf("_");
+      const bId = idx > 0 ? sId.substring(0, idx) : sId;
+      return bId === allocatedBatch.batchId.toUpperCase();
+    }).length;
 
     if (currentBagsForThisBatch >= maxBagsForThisBatch) {
       playSound("warning");
@@ -562,7 +694,23 @@ export function LoaderVerificationPortal({
       return;
     }
 
+    // Check overall Challan quota
+    const totalRequiredBags = Math.round(currentChallan.totalQuantity * 2);
+    if (scannedSackIdsRef.current.size >= totalRequiredBags) {
+      playSound("warning");
+      setFeedback({
+        type: "OVER_QUOTA",
+        title: "CONSIGNMENT QUOTA FULL!",
+        message: `All ${totalRequiredBags} sacks for Challan #${currentChallan.challanNumber} have already been verified and loaded. No additional sacks can be added.`,
+        scannedRaw: canonicalSackId,
+      });
+      return;
+    }
+
     // ─── VALIDATION 5: ACCEPT UNIQUE SACK ───
+    // SYNCHRONOUSLY lock into Set immediately to block all subsequent frames
+    scannedSackIdsRef.current.add(canonicalSackId);
+
     const newEvent: ScannedSackEvent = {
       id: `SACK-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       sackId: canonicalSackId,
@@ -572,7 +720,10 @@ export function LoaderVerificationPortal({
       timestamp: Date.now(),
     };
 
-    setScannedSacks((prev) => [newEvent, ...prev]);
+    setScannedSacks((prev) => [
+      newEvent,
+      ...prev.filter((s) => s.sackId.toUpperCase() !== canonicalSackId),
+    ]);
 
     playSound("success");
     if (navigator.vibrate) navigator.vibrate(60);
@@ -588,9 +739,9 @@ export function LoaderVerificationPortal({
     });
 
     // Auto-update loading status in database to IN_PROGRESS if pending
-    if (activeChallan.loadingStatus === "PENDING") {
-      updateChallanLoadingStatus(activeChallan.id, "IN_PROGRESS", supervisorName).catch(console.warn);
-      activeChallan.loadingStatus = "IN_PROGRESS";
+    if (currentChallan.loadingStatus === "PENDING") {
+      updateChallanLoadingStatus(currentChallan.id, "IN_PROGRESS", supervisorName).catch(console.warn);
+      currentChallan.loadingStatus = "IN_PROGRESS";
     }
   };
 
@@ -1227,9 +1378,21 @@ export function LoaderVerificationPortal({
                 <Card className="p-4 bg-slate-900 border border-slate-800 rounded-2xl shadow-lg space-y-2">
                   <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
                     <span className="font-bold text-slate-300">Verified Sacks Activity Log</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {scannedSacks.length} sacks loaded
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {totalVerifiedBags} unique sacks
+                      </span>
+                      {scannedSacks.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearAllSacks}
+                          className="text-[10px] text-rose-400 hover:text-rose-300 hover:underline cursor-pointer font-semibold ml-1.5"
+                          title="Reset / Clear all sacks for this challan"
+                        >
+                          Clear All
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-1.5 max-h-44 overflow-y-auto pr-1">
                     {scannedSacks.length === 0 ? (
@@ -1240,7 +1403,7 @@ export function LoaderVerificationPortal({
                       scannedSacks.map((item) => (
                         <div
                           key={item.id}
-                          className="flex items-center justify-between p-1.5 rounded-lg bg-slate-950 text-[11px]"
+                          className="flex items-center justify-between p-1.5 rounded-lg bg-slate-950 text-[11px] group"
                         >
                           <div className="flex items-center gap-1.5 truncate">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -1250,13 +1413,23 @@ export function LoaderVerificationPortal({
                             <span className="font-mono text-slate-200 truncate">{item.sackId}</span>
                             <span className="text-[10px] text-slate-500">({item.bayLocation})</span>
                           </div>
-                          <span className="text-[10px] text-slate-500 shrink-0">
-                            {new Date(item.timestamp).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                              second: "2-digit",
-                            })}
-                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-slate-500">
+                              {new Date(item.timestamp).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                              })}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSack(item.sackId)}
+                              className="text-slate-500 hover:text-rose-400 opacity-60 hover:opacity-100 p-0.5 rounded cursor-pointer transition-colors"
+                              title={`Remove sack ${item.sackId}`}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
                         </div>
                       ))
                     )}

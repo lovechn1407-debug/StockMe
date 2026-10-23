@@ -836,7 +836,7 @@ export async function updateChallanGateExit(
 // Loader Verification & Physical Loading Sign-off
 export async function updateChallanLoadingStatus(
   challanId: string,
-  status: "IN_PROGRESS" | "LOADED",
+  status: "PENDING" | "IN_PROGRESS" | "LOADED",
   supervisorName: string = "Loader Lead",
   verifiedBagsByBatch?: Record<string, number>
 ): Promise<void> {
