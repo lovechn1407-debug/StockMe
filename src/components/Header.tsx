@@ -1,5 +1,5 @@
 import { Button, Chip, Separator } from "@heroui/react";
-import { RotateCcw, Database, ThermometerSun, ShieldCheck, Warehouse, AlertOctagon, UserCheck } from "lucide-react";
+import { RotateCcw, Warehouse, AlertOctagon, UserCheck } from "lucide-react";
 import { useState } from "react";
 
 interface HeaderProps {
@@ -53,38 +53,14 @@ export function Header({
         </div>
 
         {/* Right: Environmental chips & Actions (strictly single row, no wrapping) */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
-          {/* Live Firebase Sync Chip */}
-          <Chip
-            size="sm"
-            color="success"
-            variant="soft"
-            className="flex items-center gap-1"
-          >
-            <Database className="w-3.5 h-3.5 inline mr-1 text-success shrink-0" />
-            <span className="hidden sm:inline">Firebase Realtime Live</span>
-            <span className="sm:hidden">Live</span>
-          </Chip>
-
-          {/* Godown Humidity & Temp Chip */}
-          <Chip
-            size="sm"
-            color={monsoonSimActive ? "warning" : "default"}
-            variant="soft"
-            className="hidden md:inline-flex"
-          >
-            <ThermometerSun className="w-3.5 h-3.5 inline mr-1 shrink-0" />
-            <span>{monsoonSimActive ? "31°C | 84% RH" : "28°C | 58% RH"}</span>
-            <span className="hidden xl:inline">{monsoonSimActive ? " (Monsoon)" : " (Optimal)"}</span>
-          </Chip>
-
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           {/* Active Godown Officer Chip */}
           {officerName && (
             <Chip
               size="sm"
               color="accent"
               variant="soft"
-              className="hidden xl:inline-flex cursor-pointer transition-opacity hover:opacity-80"
+              className="inline-flex cursor-pointer transition-opacity hover:opacity-80"
               onClick={onOpenSettingsTab}
               title={`Active Authorized Officer: ${officerName} — Click to manage in Settings`}
             >
@@ -121,8 +97,6 @@ export function Header({
 
           <Separator orientation="vertical" className="h-5 hidden sm:block" />
 
-
-
           {/* Reset Demo Data Button */}
           <Button
             variant="secondary"
@@ -132,19 +106,13 @@ export function Header({
             className="font-medium text-xs shrink-0"
           >
             <RotateCcw className={`w-3.5 h-3.5 sm:mr-1.5 ${isResetting ? "animate-spin" : ""}`} />
-            <span className="hidden lg:inline">
+            <span className="hidden sm:inline">
               {isResetting ? "Resetting..." : resetSuccess ? "Demo Data Reset!" : "Reset Demo Data"}
             </span>
-            <span className="lg:hidden">
+            <span className="sm:hidden">
               {isResetting ? "..." : resetSuccess ? "Reset" : "Reset"}
             </span>
           </Button>
-
-          {/* Official Seal / Compliance Chip */}
-          <Chip size="sm" color="default" variant="soft" className="hidden 2xl:inline-flex shrink-0">
-            <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-primary" />
-            FIFO Mandate: Active
-          </Chip>
         </div>
       </div>
     </header>
