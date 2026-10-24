@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import type { Batch, DeliveryChallan, CommodityType } from "../types";
 import { COMMODITIES } from "../types";
+import { getStoredCommodities } from "../lib/settings";
 import {
   getBatchAgeDays,
   formatBayCode,
@@ -43,6 +44,7 @@ interface TabDashboardProps {
   monsoonSimActive: boolean;
   setMonsoonSimActive: (val: boolean) => void;
   onOpenCriticalTab?: () => void;
+  commodities?: string[];
 }
 
 export function TabDashboard({
@@ -51,7 +53,9 @@ export function TabDashboard({
   onSelectCommodityForDispatch,
   monsoonSimActive,
   setMonsoonSimActive,
+  commodities,
 }: TabDashboardProps) {
+  const activeCommodities = commodities && commodities.length > 0 ? commodities : getStoredCommodities();
   const [alertDetailBatches, setAlertDetailBatches] = useState<Batch[] | null>(null);
   const [alertDetailTitle, setAlertDetailTitle] = useState<string>("");
   const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
@@ -93,9 +97,9 @@ export function TabDashboard({
   const uniqueShopsServed = new Set(challans.map((c) => c.fpsId)).size;
 
   // Commodity Next-Out mapping
-  const commodityRows = COMMODITIES.map((commodity) => {
+  const commodityRows = activeCommodities.map((commodity) => {
     const commodityBatches = batches.filter(
-      (b) => b.commodity === commodity && b.remainingQty > 0
+      (b) => b.commodity.toLowerCase() === commodity.toLowerCase() && b.remainingQty > 0
     );
     const totalQty = commodityBatches.reduce((acc, b) => acc + b.remainingQty, 0);
     const activeBatchCount = commodityBatches.length;
@@ -151,7 +155,7 @@ export function TabDashboard({
                 <span className="text-xs font-semibold text-muted">Qtl</span>
               </div>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-primary/10 text-primary border border-primary/20 shadow-2xs">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20 shadow-2xs">
               <Package className="w-4.5 h-4.5" />
             </div>
           </div>
@@ -159,7 +163,7 @@ export function TabDashboard({
           <div className="space-y-1.5 pt-2">
             <div className="w-full h-1.5 rounded-full bg-muted/20 overflow-hidden">
               <div
-                className="h-full rounded-full bg-primary transition-all duration-500"
+                className="h-full rounded-full bg-blue-500 transition-all duration-500"
                 style={{ width: `${Math.min(100, Math.max(8, (totalAvailableStock / 3000) * 100))}%` }}
               />
             </div>
@@ -184,15 +188,15 @@ export function TabDashboard({
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
                     fifoScore >= 80
-                      ? "bg-success/15 text-success border-success/30"
-                      : "bg-warning/15 text-warning border-warning/30"
+                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30"
+                      : "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30"
                   }`}
                 >
                   Target &gt;90%
                 </span>
               </div>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-success/10 text-success border border-success/20 shadow-2xs">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-2xs">
               <CheckCircle2 className="w-4.5 h-4.5" />
             </div>
           </div>
@@ -201,21 +205,21 @@ export function TabDashboard({
             <div className="w-full h-1.5 rounded-full bg-muted/20 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  fifoScore >= 80 ? "bg-success" : "bg-warning"
+                  fifoScore >= 80 ? "bg-emerald-500" : "bg-amber-500"
                 }`}
                 style={{ width: `${Math.min(100, Math.max(0, fifoScore))}%` }}
               />
             </div>
             <div className="flex items-center justify-between text-[11px] text-muted">
               <span>{fifoCompliantChallans} of {totalChallans} dispatches</span>
-              <span className="font-semibold text-success">Strict FIFO</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">Strict FIFO</span>
             </div>
           </div>
         </Card>
 
         {/* Card 3: Expiring Stock Alert (<60d) — clickable */}
         <Card
-          className="p-4 border border-border shadow-xs bg-surface flex flex-col justify-between h-[154px] !rounded-xl cursor-pointer group hover:border-warning/60 hover:shadow-md transition-all select-none"
+          className="p-4 border border-border shadow-xs bg-surface flex flex-col justify-between h-[154px] !rounded-xl cursor-pointer group hover:border-amber-500/60 hover:shadow-md transition-all select-none"
           onClick={() => openAlertDetail(urgentBatches, "Expiring Stock Alert (<60 Days)")}
         >
           <div className="flex items-start justify-between gap-3">
@@ -229,15 +233,15 @@ export function TabDashboard({
                 </span>
                 <span className="text-xs font-semibold text-muted">Batches</span>
                 {criticalExpiringBatches.length > 0 ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-danger/15 text-danger border border-danger/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/15 text-red-700 dark:text-red-300 border border-red-500/30">
                     {criticalExpiringBatches.length} Critical (&lt;30d)
                   </span>
                 ) : warningExpiringBatches.length > 0 ? (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-warning/15 text-warning border border-warning/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30">
                     {warningExpiringBatches.length} Expiring Soon
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-success/15 text-success border border-success/30">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
                     All Safe (&gt;60d)
                   </span>
                 )}
@@ -245,8 +249,8 @@ export function TabDashboard({
             </div>
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 border shadow-2xs group-hover:scale-105 transition-transform ${
               criticalExpiringBatches.length > 0
-                ? "bg-danger/10 text-danger border-danger/20"
-                : "bg-warning/10 text-warning border-warning/20"
+                ? "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
             }`}>
               {criticalExpiringBatches.length > 0 ? (
                 <AlertOctagon className="w-4.5 h-4.5" />
@@ -260,7 +264,7 @@ export function TabDashboard({
             <div className="w-full h-1.5 rounded-full bg-muted/20 overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
-                  criticalExpiringBatches.length > 0 ? "bg-danger" : "bg-warning"
+                  criticalExpiringBatches.length > 0 ? "bg-red-500" : "bg-amber-500"
                 }`}
                 style={{
                   width: `${Math.min(
@@ -276,7 +280,7 @@ export function TabDashboard({
                   ? `Shortest: ${getExpiryGapDays(urgentBatches[0].expiryDate)}d to expiry`
                   : "All stock safe (>60d)"}
               </span>
-              <span className="font-bold text-warning group-hover:translate-x-0.5 transition-transform flex items-center">
+              <span className="font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform flex items-center">
                 Details <ArrowRight className="w-3 h-3 ml-0.5" />
               </span>
             </div>
@@ -297,7 +301,7 @@ export function TabDashboard({
                 <span className="text-xs font-semibold text-muted">Challans Issued</span>
               </div>
             </div>
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-[#087F8C]/10 text-[#087F8C] border border-[#087F8C]/20 shadow-2xs">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 shadow-2xs">
               <Truck className="w-4.5 h-4.5" />
             </div>
           </div>
@@ -305,7 +309,7 @@ export function TabDashboard({
           <div className="space-y-1.5 pt-2">
             <div className="w-full h-1.5 rounded-full bg-muted/20 overflow-hidden">
               <div
-                className="h-full rounded-full bg-[#087F8C] transition-all duration-500"
+                className="h-full rounded-full bg-purple-500 transition-all duration-500"
                 style={{
                   width: `${Math.min(100, Math.max(15, (uniqueShopsServed / 6) * 100))}%`,
                 }}
@@ -313,14 +317,14 @@ export function TabDashboard({
             </div>
             <div className="flex items-center justify-between text-[11px] text-muted">
               <span>{uniqueShopsServed} Fair Price Shops</span>
-              <span className="font-semibold text-[#087F8C]">100% Replenished</span>
+              <span className="font-semibold text-purple-600 dark:text-purple-400">100% Replenished</span>
             </div>
           </div>
         </Card>
       </div>
 
       {/* ─── Dashboard Visual Analytics: Grain Stock Bar Chart & FIFO Compliance Line Graph ─── */}
-      <DashboardCharts batches={batches} challans={challans} />
+      <DashboardCharts batches={batches} challans={challans} commodities={activeCommodities} />
 
       {/* Main Section: Commodity Stock & Next-Out Summary Table */}
       <Card className="!rounded-xl">

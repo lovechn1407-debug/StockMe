@@ -1,11 +1,4 @@
-export type CommodityType =
-  | "Wheat"
-  | "Rice"
-  | "Sugar"
-  | "Salt"
-  | "Edible Oil"
-  | "Chana Dal"
-  | "Tuvar Dal";
+export type CommodityType = string;
 
 export type BatchStatus = "Eligible" | "Under Fumigation" | "Quality Hold" | "Depleted";
 

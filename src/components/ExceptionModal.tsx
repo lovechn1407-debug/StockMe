@@ -1,7 +1,8 @@
 import { Modal, Button, TextField, Label, Input, Alert } from "@heroui/react";
 import { AlertTriangle, ShieldAlert } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { FIFOException } from "../types";
+import { getStoredOfficerName, getStoredOfficerDesignation } from "../lib/settings";
 
 interface ExceptionModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface ExceptionModalProps {
   olderBatchAge: number;
   chosenBatchId: string;
   chosenBatchAge: number;
+  defaultOfficerName?: string;
 }
 
 export function ExceptionModal({
@@ -25,10 +27,24 @@ export function ExceptionModal({
   olderBatchAge,
   chosenBatchId,
   chosenBatchAge,
+  defaultOfficerName,
 }: ExceptionModalProps) {
+  const getInitialOfficer = () => {
+    if (defaultOfficerName) return defaultOfficerName;
+    const name = getStoredOfficerName();
+    const desig = getStoredOfficerDesignation();
+    return `${name} (${desig})`;
+  };
+
   const [reason, setReason] = useState<FIFOException["reason"]>("Physical Access Blocked");
   const [remarks, setRemarks] = useState<string>("");
-  const [officerName, setOfficerName] = useState<string>("A. K. Sharma (Assistant Godown Officer)");
+  const [officerName, setOfficerName] = useState<string>(getInitialOfficer);
+
+  useEffect(() => {
+    if (isOpen) {
+      setOfficerName(getInitialOfficer());
+    }
+  }, [isOpen, defaultOfficerName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,5 +1,5 @@
 import { Button, Chip, Separator } from "@heroui/react";
-import { RotateCcw, Database, ThermometerSun, ShieldCheck, Warehouse, AlertOctagon } from "lucide-react";
+import { RotateCcw, Database, ThermometerSun, ShieldCheck, Warehouse, AlertOctagon, UserCheck } from "lucide-react";
 import { useState } from "react";
 
 interface HeaderProps {
@@ -8,6 +8,8 @@ interface HeaderProps {
   monsoonSimActive: boolean;
   criticalBatchesCount?: number;
   onOpenCriticalTab?: () => void;
+  officerName?: string;
+  onOpenSettingsTab?: () => void;
 }
 
 export function Header({
@@ -16,6 +18,8 @@ export function Header({
   monsoonSimActive,
   criticalBatchesCount = 0,
   onOpenCriticalTab,
+  officerName,
+  onOpenSettingsTab,
 }: HeaderProps) {
   const [resetSuccess, setResetSuccess] = useState(false);
 
@@ -73,6 +77,21 @@ export function Header({
             <span>{monsoonSimActive ? "31°C | 84% RH" : "28°C | 58% RH"}</span>
             <span className="hidden xl:inline">{monsoonSimActive ? " (Monsoon)" : " (Optimal)"}</span>
           </Chip>
+
+          {/* Active Godown Officer Chip */}
+          {officerName && (
+            <Chip
+              size="sm"
+              color="accent"
+              variant="soft"
+              className="hidden xl:inline-flex cursor-pointer transition-opacity hover:opacity-80"
+              onClick={onOpenSettingsTab}
+              title={`Active Authorized Officer: ${officerName} — Click to manage in Settings`}
+            >
+              <UserCheck className="w-3.5 h-3.5 inline mr-1 text-accent shrink-0" />
+              <span>Officer: <strong>{officerName}</strong></span>
+            </Chip>
+          )}
 
           {/* Critical Stock Alert Icon Button */}
           <button

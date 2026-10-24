@@ -22,6 +22,7 @@ import {
 import { useState } from "react";
 import type { Batch, CommodityType } from "../types";
 import { COMMODITIES, BAY_LOCATIONS } from "../types";
+import { getStoredCommodities } from "../lib/settings";
 import {
   getBatchAgeDays,
   addInwardBatch,
@@ -37,6 +38,7 @@ interface TabBatchesProps {
   batches: Batch[];
   onToggleStatus: (batchId: string, newStatus: Batch["status"], note: string) => Promise<void>;
   onLogDriage: (batchId: string, currentQty: number, deductQty: number, reason: string) => Promise<void>;
+  commodities?: string[];
 }
 
 interface BatchActionButtonsProps {
@@ -120,7 +122,8 @@ function BatchActionButtons({
   );
 }
 
-export function TabBatches({ batches, onToggleStatus, onLogDriage }: TabBatchesProps) {
+export function TabBatches({ batches, onToggleStatus, onLogDriage, commodities }: TabBatchesProps) {
+  const activeCommodities = commodities && commodities.length > 0 ? commodities : getStoredCommodities();
   // Modal states
   const [isInwardModalOpen, setIsInwardModalOpen] = useState(false);
   const [selectedBatchForQR, setSelectedBatchForQR] = useState<Batch | null>(null);
@@ -287,7 +290,7 @@ export function TabBatches({ batches, onToggleStatus, onLogDriage }: TabBatchesP
                 className="text-xs font-medium bg-surface border border-border rounded px-2.5 py-1.5 text-foreground focus:outline-none"
               >
                 <option value="All">All Commodities ({activeBatches.length})</option>
-                {COMMODITIES.map((c) => (
+                {activeCommodities.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -490,7 +493,7 @@ export function TabBatches({ batches, onToggleStatus, onLogDriage }: TabBatchesP
                         onChange={(e) => setFormCommodity(e.target.value as CommodityType)}
                         className="w-full text-sm font-medium bg-surface border border-border rounded-md px-3 py-2 text-foreground focus:outline-none"
                       >
-                        {COMMODITIES.map((c) => (
+                        {activeCommodities.map((c) => (
                           <option key={c} value={c}>
                             {c}
                           </option>

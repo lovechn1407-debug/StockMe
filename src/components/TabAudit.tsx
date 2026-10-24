@@ -9,6 +9,7 @@ import {
   Label,
   Input,
   Alert,
+  Separator,
 } from "@heroui/react";
 import {
   ShieldAlert,
@@ -19,7 +20,6 @@ import {
   RotateCcw,
   CheckCircle2,
   Eye,
-  Filter,
   Building2,
   Calendar,
   Clock,
@@ -174,7 +174,7 @@ export function TabAudit({
   }, [exceptions, exceptionSearchQuery]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* ─── Compact Header ─── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
         <div>
@@ -193,16 +193,16 @@ export function TabAudit({
 
         {/* Live System Indicator */}
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-muted flex items-center gap-1.5 bg-surface border border-border px-2.5 py-1 rounded-lg">
+          <span className="text-[11px] text-muted flex items-center gap-1.5 bg-surface border border-border px-3 py-1.5 rounded-lg font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse inline-block" />
             Live Audit Stream Active
           </span>
         </div>
       </div>
 
-      {/* ─── Compact Summary Metrics Row ─── */}
+      {/* ─── HeroUI Metric Indicators ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="p-3 border border-border bg-surface !rounded-xl">
+        <Card className="p-3.5 border border-border bg-surface">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider text-muted block">
@@ -221,7 +221,7 @@ export function TabAudit({
           </span>
         </Card>
 
-        <Card className="p-3 border border-border bg-surface !rounded-xl">
+        <Card className="p-3.5 border border-border bg-surface">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider text-muted block">
@@ -240,7 +240,7 @@ export function TabAudit({
           </span>
         </Card>
 
-        <Card className="p-3 border border-border bg-surface !rounded-xl">
+        <Card className="p-3.5 border border-border bg-surface">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider text-muted block">
@@ -259,7 +259,7 @@ export function TabAudit({
           </span>
         </Card>
 
-        <Card className="p-3 border border-border bg-surface !rounded-xl">
+        <Card className="p-3.5 border border-border bg-surface">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] uppercase font-bold tracking-wider text-muted block">
@@ -281,7 +281,7 @@ export function TabAudit({
 
       {/* ─── Emergency Recall Alert Banner ─── */}
       {recallSuccessMsg && (
-        <Alert status="warning" className="rounded-xl border border-amber-500/30">
+        <Alert status="warning" className="border border-amber-500/30">
           <Alert.Indicator>
             <ShieldAlert className="w-5 h-5 text-amber-500" />
           </Alert.Indicator>
@@ -310,119 +310,145 @@ export function TabAudit({
         </Tabs.List>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            SUB-TAB 1: Batch-to-FPS Traceability & Recall
+            SUB-TAB 1: Batch-to-FPS Traceability & Recall (Pure HeroUI Structure)
            ══════════════════════════════════════════════════════════════════════ */}
-        <Tabs.Panel id="traceability" className="pt-4 space-y-4">
-          {/* Filter Bar & Recall Trigger */}
-          <Card className="p-3.5 border border-border bg-surface !rounded-xl">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-muted whitespace-nowrap">Target Batch:</span>
-                  <select
-                    value={selectedBatchId}
-                    onChange={(e) => setSelectedBatchId(e.target.value)}
-                    className="text-xs font-mono font-bold bg-background border border-border rounded-lg px-2.5 py-1.5 text-primary focus:outline-none focus:border-primary"
-                  >
-                    {batches.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.id} ({b.commodity} • {b.remainingQty} Q in {b.bayLocation})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-muted whitespace-nowrap">Consignee Shop:</span>
-                  <select
-                    value={selectedShopId}
-                    onChange={(e) => setSelectedShopId(e.target.value)}
-                    className="text-xs font-medium bg-background border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-primary"
-                  >
-                    <option value="All">All Fair Price Shops ({shops.length})</option>
-                    {shops.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.dealerName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+        <Tabs.Panel id="traceability" className="pt-4 space-y-5">
+          {/* Master Batch Inspection & Controls Card */}
+          <Card className="border border-border bg-surface shadow-xs">
+            <Card.Header className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <Card.Title className="text-sm font-bold text-foreground">
+                  Batch Lifecycle &amp; Consignment Mapping
+                </Card.Title>
+                <Card.Description className="text-xs text-muted">
+                  Select an inward grain stack to trace all downstream allocations, Fair Price Shop consignments, and active balance.
+                </Card.Description>
               </div>
 
-              {/* Compact Recall Button */}
               {currentBatch && (
                 <Button
                   variant="danger"
                   size="sm"
                   onPress={() => setIsRecallModalOpen(true)}
-                  className="font-bold text-xs cursor-pointer shadow-xs"
+                  className="font-bold text-xs shrink-0 cursor-pointer"
                 >
-                  <ShieldAlert className="w-3.5 h-3.5 mr-1.5" />
+                  <ShieldAlert className="w-4 h-4 mr-1.5" />
                   Freeze &amp; Recall Batch ({currentBatch.id})
                 </Button>
               )}
-            </div>
-          </Card>
+            </Card.Header>
 
-          {/* Current Batch Status Banner */}
-          {currentBatch && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-3.5 rounded-xl bg-surface border border-border text-xs">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-muted block">Batch Commodity</span>
-                <strong className="text-sm text-foreground">{currentBatch.commodity}</strong>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-muted block">Current Godown Balance</span>
-                <strong className="text-sm text-foreground">
-                  {currentBatch.remainingQty} <span className="text-xs font-normal text-muted">Quintals</span>
-                </strong>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-muted block">Stack Bay</span>
-                <strong className="text-sm text-primary font-mono">{currentBatch.bayLocation}</strong>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-muted block">Downstream FPS Reach</span>
-                <strong className="text-sm text-foreground">
-                  {affectedShops.length} <span className="text-xs font-normal text-muted">Fair Price Shops</span>
-                </strong>
-              </div>
-              <div>
-                <span className="text-[10px] uppercase font-bold text-muted block">Quality Status</span>
-                <div className="mt-0.5">
-                  <Chip
-                    size="sm"
-                    color={
-                      currentBatch.status === "Eligible"
-                        ? "success"
-                        : currentBatch.status === "Quality Hold"
-                        ? "danger"
-                        : "warning"
-                    }
-                    variant="soft"
-                    className="font-bold text-[10px]"
+            <Card.Content className="p-4 space-y-4">
+              {/* Selectors Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted block">
+                    Target Inward Batch ID
+                  </label>
+                  <select
+                    value={selectedBatchId}
+                    onChange={(e) => setSelectedBatchId(e.target.value)}
+                    className="w-full text-xs font-mono font-bold bg-background border border-border rounded-lg px-3 py-2 text-primary focus:outline-none focus:border-primary"
                   >
-                    {currentBatch.status}
-                  </Chip>
+                    {batches.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.id} — {b.commodity} ({b.remainingQty} Q remaining in {b.bayLocation})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted block">
+                    Filter Consignee Fair Price Shop
+                  </label>
+                  <select
+                    value={selectedShopId}
+                    onChange={(e) => setSelectedShopId(e.target.value)}
+                    className="w-full text-xs font-medium bg-background border border-border rounded-lg px-3 py-2 text-foreground focus:outline-none focus:border-primary"
+                  >
+                    <option value="All">All Fair Price Shops ({shops.length} Active)</option>
+                    {shops.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.dealerName} • {s.licenseNo})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* Matching Dispatches Table */}
-          <Card className="border border-border bg-surface !rounded-xl overflow-hidden">
-            <Card.Header className="p-3.5 border-b border-border flex items-center justify-between">
+              <Separator />
+
+              {/* Authoritative Batch Metrics Specification Grid */}
+              {currentBatch && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted block">Commodity</span>
+                    <span className="text-sm font-bold text-foreground block">{currentBatch.commodity}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted block">Stack Bay</span>
+                    <span className="text-sm font-mono font-bold text-primary block">{currentBatch.bayLocation}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted block">Receipt Date</span>
+                    <span className="text-sm font-mono text-foreground block">{currentBatch.receiptDate}</span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted block">Current Stock Balance</span>
+                    <span className="text-sm font-bold text-foreground block">
+                      {currentBatch.remainingQty} <span className="text-xs font-normal text-muted">Quintals</span>
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted block">Downstream FPS Reach</span>
+                    <span className="text-sm font-bold text-foreground block">
+                      {affectedShops.length} <span className="text-xs font-normal text-muted">Fair Price Shops</span>
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-muted block">Quality Status</span>
+                    <div className="mt-0.5">
+                      <Chip
+                        size="sm"
+                        color={
+                          currentBatch.status === "Eligible"
+                            ? "success"
+                            : currentBatch.status === "Quality Hold"
+                            ? "danger"
+                            : "warning"
+                        }
+                        variant="soft"
+                        className="font-bold text-[10px]"
+                      >
+                        {currentBatch.status}
+                      </Chip>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Card.Content>
+          </Card>
+
+          {/* Consignments Challan Ledger Card */}
+          <Card className="border border-border bg-surface shadow-xs overflow-hidden">
+            <Card.Header className="p-4 border-b border-border flex items-center justify-between">
               <div>
-                <Card.Title className="text-xs font-bold text-foreground">
-                  Delivery Challans Sourced from {selectedBatchId}
+                <Card.Title className="text-sm font-bold text-foreground">
+                  Downstream Delivery Challans Issued from {selectedBatchId}
                 </Card.Title>
-                <Card.Description className="text-[11px] text-muted">
-                  Showing all consignments issued to Fair Price Shops from this specific inward batch.
+                <Card.Description className="text-xs text-muted">
+                  Official consignments dispatched to Fair Price Shops sourcing stock from this batch.
                 </Card.Description>
               </div>
-              <span className="text-xs text-muted font-medium">
-                {matchingChallans.length} Challan{matchingChallans.length === 1 ? "" : "s"} Found
-              </span>
+              <Chip size="sm" variant="soft" color="default" className="font-bold text-[10px]">
+                {matchingChallans.length} Challan{matchingChallans.length === 1 ? "" : "s"}
+              </Chip>
             </Card.Header>
 
             <Card.Content className="p-0">
@@ -432,8 +458,8 @@ export function TabAudit({
                     <Table.Header>
                       <Table.Column isRowHeader className="whitespace-nowrap">Challan Number</Table.Column>
                       <Table.Column className="whitespace-nowrap">Issue Date</Table.Column>
-                      <Table.Column className="whitespace-nowrap">Fair Price Shop</Table.Column>
-                      <Table.Column className="whitespace-nowrap">License &amp; Dealer</Table.Column>
+                      <Table.Column className="whitespace-nowrap">Consignee Fair Price Shop</Table.Column>
+                      <Table.Column className="whitespace-nowrap">License &amp; Authorized Dealer</Table.Column>
                       <Table.Column className="whitespace-nowrap text-right">Sourced from this Batch</Table.Column>
                       <Table.Column className="whitespace-nowrap text-right">Total Challan Qty</Table.Column>
                       <Table.Column className="whitespace-nowrap">FIFO Status</Table.Column>
@@ -507,47 +533,49 @@ export function TabAudit({
         </Tabs.Panel>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            SUB-TAB 2: Complete Movement Audit Log
+            SUB-TAB 2: Complete Movement Audit Log (Pure HeroUI Structure)
            ══════════════════════════════════════════════════════════════════════ */}
-        <Tabs.Panel id="movement" className="pt-4 space-y-3.5">
-          {/* Client-Side Search and Action Filter Toolbar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-3 rounded-xl border border-border">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <div className="relative w-full">
-                <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search activity, batch ID, officer..."
-                  value={movementSearchQuery}
-                  onChange={(e) => setMovementSearchQuery(e.target.value)}
-                  className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-primary font-mono"
-                />
+        <Tabs.Panel id="movement" className="pt-4 space-y-4">
+          <Card className="border border-border bg-surface shadow-xs overflow-hidden">
+            <Card.Header className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <Card.Title className="text-sm font-bold text-foreground">
+                  Chronological Movement &amp; Transaction Ledger
+                </Card.Title>
+                <Card.Description className="text-xs text-muted">
+                  Immutable timeline of grain receipts, FIFO allocations, override authorizations, and physical driage adjustments.
+                </Card.Description>
               </div>
-            </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs text-muted whitespace-nowrap">Filter Action:</span>
-              <select
-                value={movementActionFilter}
-                onChange={(e) => setMovementActionFilter(e.target.value)}
-                className="text-xs font-medium bg-background border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-primary"
-              >
-                <option value="ALL">All Actions ({sortedLogs.length})</option>
-                <option value="DISPATCH_FIFO">FIFO Dispatches</option>
-                <option value="DISPATCH_OVERRIDE">FIFO Overrides</option>
-                <option value="INWARD_STOCK">Inward Stock</option>
-                <option value="BATCH_RECALL">Batch Recalls</option>
-                <option value="STATUS_CHANGE">Status Changes</option>
-                <option value="DRIAGE_ADJUSTMENT">Driage Adjustments</option>
-              </select>
+              {/* Search and Action Filter inside Header */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative min-w-[180px] sm:min-w-[220px]">
+                  <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search activity, batch, officer..."
+                    value={movementSearchQuery}
+                    onChange={(e) => setMovementSearchQuery(e.target.value)}
+                    className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-primary font-mono"
+                  />
+                </div>
 
-              <span className="text-xs text-muted font-medium ml-1">
-                Showing {filteredLogs.length} of {sortedLogs.length}
-              </span>
-            </div>
-          </div>
+                <select
+                  value={movementActionFilter}
+                  onChange={(e) => setMovementActionFilter(e.target.value)}
+                  className="text-xs font-medium bg-background border border-border rounded-lg px-2.5 py-1.5 text-foreground focus:outline-none focus:border-primary"
+                >
+                  <option value="ALL">All Actions ({sortedLogs.length})</option>
+                  <option value="DISPATCH_FIFO">FIFO Dispatches</option>
+                  <option value="DISPATCH_OVERRIDE">FIFO Overrides</option>
+                  <option value="INWARD_STOCK">Inward Stock</option>
+                  <option value="BATCH_RECALL">Batch Recalls</option>
+                  <option value="STATUS_CHANGE">Status Changes</option>
+                  <option value="DRIAGE_ADJUSTMENT">Driage Adjustments</option>
+                </select>
+              </div>
+            </Card.Header>
 
-          <Card className="border border-border bg-surface !rounded-xl overflow-hidden">
             <Card.Content className="p-0">
               <Table>
                 <Table.ScrollContainer className="overflow-x-auto">
@@ -644,30 +672,33 @@ export function TabAudit({
         </Tabs.Panel>
 
         {/* ══════════════════════════════════════════════════════════════════════
-            SUB-TAB 3: FIFO Override Exceptions
+            SUB-TAB 3: FIFO Override Exceptions (Pure HeroUI Structure)
            ══════════════════════════════════════════════════════════════════════ */}
-        <Tabs.Panel id="exceptions" className="pt-4 space-y-3.5">
-          {/* Client-Side Search Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface p-3 rounded-xl border border-border">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <div className="relative w-full">
+        <Tabs.Panel id="exceptions" className="pt-4 space-y-4">
+          <Card className="border border-border bg-surface shadow-xs overflow-hidden">
+            <Card.Header className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <Card.Title className="text-sm font-bold text-foreground">
+                  Statutory FIFO Override Exceptions Register
+                </Card.Title>
+                <Card.Description className="text-xs text-muted">
+                  Formal ledger of non-FIFO dispatches authorized by Assistant Godown Officers under statutory exception protocols.
+                </Card.Description>
+              </div>
+
+              {/* Search Bar inside Header */}
+              <div className="relative min-w-[200px] sm:min-w-[260px]">
                 <Search className="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
-                  placeholder="Search exceptions by batch, FPS, officer, reason..."
+                  placeholder="Search exceptions by batch, FPS, officer..."
                   value={exceptionSearchQuery}
                   onChange={(e) => setExceptionSearchQuery(e.target.value)}
                   className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-primary font-mono"
                 />
               </div>
-            </div>
+            </Card.Header>
 
-            <div className="text-xs text-muted font-medium">
-              Showing {filteredExceptions.length} of {exceptions.length} Recorded Overrides
-            </div>
-          </div>
-
-          <Card className="border border-border bg-surface !rounded-xl overflow-hidden">
             <Card.Content className="p-0">
               <Table>
                 <Table.ScrollContainer className="overflow-x-auto">

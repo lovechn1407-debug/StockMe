@@ -37,6 +37,7 @@ import type {
   DispatchedBatchItem,
 } from "../types";
 import { COMMODITIES } from "../types";
+import { getStoredCommodities } from "../lib/settings";
 import { getBatchAgeDays, issueDeliveryChallan } from "../lib/db";
 import { ExceptionModal } from "./ExceptionModal";
 import { ChallanModal } from "./ChallanModal";
@@ -53,6 +54,8 @@ interface TabDispatchProps {
     updatedBatches: Batch[],
     exception?: FIFOException
   ) => void;
+  commodities?: string[];
+  officerName?: string;
 }
 
 export function TabDispatch({
@@ -63,7 +66,10 @@ export function TabDispatch({
   preselectedBatchId,
   onClearPreselectedBatch,
   onDispatchSuccess,
+  commodities,
+  officerName,
 }: TabDispatchProps) {
+  const activeCommodities = commodities && commodities.length > 0 ? commodities : getStoredCommodities();
   // Step 1 states
   const [selectedShopId, setSelectedShopId] = useState<string>(shops[0]?.id || "FPS-101");
   const [requiredQty, setRequiredQty] = useState<number>(100);
@@ -348,7 +354,7 @@ export function TabDispatch({
                   onChange={(e) => setSelectedCommodity(e.target.value as CommodityType)}
                   className="w-full text-xs font-medium bg-surface border border-border rounded-md px-3 py-2 text-foreground focus:outline-none"
                 >
-                  {COMMODITIES.map((c) => (
+                  {activeCommodities.map((c) => (
                     <option key={c} value={c}>
                       {c}
                     </option>
@@ -820,6 +826,7 @@ export function TabDispatch({
           olderBatchAge={getBatchAgeDays(oldestEligible.receiptDate)}
           chosenBatchId={manualBatch.id}
           chosenBatchAge={getBatchAgeDays(manualBatch.receiptDate)}
+          defaultOfficerName={officerName}
         />
       )}
 
@@ -828,6 +835,7 @@ export function TabDispatch({
         challan={issuedChallan}
         isOpen={Boolean(issuedChallan)}
         onClose={() => setIssuedChallan(null)}
+        officerName={officerName}
       />
     </div>
   );

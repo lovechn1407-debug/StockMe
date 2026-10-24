@@ -25,18 +25,24 @@ import {
 } from "lucide-react";
 import type { DeliveryChallan, CommodityType } from "../types";
 import { COMMODITIES } from "../types";
+import { getStoredCommodities } from "../lib/settings";
 import { updateChallanGateExit } from "../lib/db";
 import { ChallanModal } from "./ChallanModal";
 
 interface TabGeneratedChallansProps {
   challans: DeliveryChallan[];
   onOpenScanner?: () => void;
+  commodities?: string[];
+  officerName?: string;
 }
 
 export function TabGeneratedChallans({
   challans,
   onOpenScanner,
+  commodities,
+  officerName,
 }: TabGeneratedChallansProps) {
+  const activeCommodities = commodities && commodities.length > 0 ? commodities : getStoredCommodities();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCommodity, setSelectedCommodity] = useState<string>("ALL");
   const [selectedCompliance, setSelectedCompliance] = useState<"ALL" | "FIFO" | "EXCEPTION">("ALL");
@@ -218,7 +224,7 @@ export function TabGeneratedChallans({
                 <span className="text-xs font-semibold text-muted">Cleared</span>
               </div>
             </div>
-            <div className="p-2 rounded-lg bg-[#087F8C]/10 text-[#087F8C] border border-[#087F8C]/20">
+            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
               <Truck className="w-5 h-5" />
             </div>
           </div>
@@ -252,8 +258,8 @@ export function TabGeneratedChallans({
               onChange={(e) => setSelectedCommodity(e.target.value)}
               className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-xs font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              <option value="ALL">All Commodities (7 Types)</option>
-              {COMMODITIES.map((c) => (
+              <option value="ALL">All Commodities ({activeCommodities.length} Types)</option>
+              {activeCommodities.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
@@ -462,7 +468,7 @@ export function TabGeneratedChallans({
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="text-xs font-bold text-success hover:bg-success/10 cursor-pointer"
+                                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
                                 onPress={() => handleMarkGateClear(challan)}
                               >
                                 Clear Gate
@@ -487,6 +493,7 @@ export function TabGeneratedChallans({
           isOpen={Boolean(selectedChallanForPrint)}
           onClose={() => setSelectedChallanForPrint(null)}
           onOpenScanner={onOpenScanner}
+          officerName={officerName}
         />
       )}
     </div>

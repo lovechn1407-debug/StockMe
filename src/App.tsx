@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   FileCheck2,
   Scan,
+  Settings,
 } from "lucide-react";
 import { ref, onValue } from "firebase/database";
 import { db } from "./lib/firebase";
@@ -36,6 +37,16 @@ import {
   getBatchAgeDays,
   getExpiryGapDays,
 } from "./lib/db";
+import {
+  getStoredCommodities,
+  saveStoredCommodities,
+  getStoredOfficerName,
+  saveStoredOfficerName,
+  getStoredOfficerDesignation,
+  saveStoredOfficerDesignation,
+  getStoredGodownName,
+  saveStoredGodownName,
+} from "./lib/settings";
 import { Header } from "./components/Header";
 import { TabDashboard } from "./components/TabDashboard";
 import { TabBatches } from "./components/TabBatches";
@@ -44,6 +55,7 @@ import { TabBays } from "./components/TabBays";
 import { TabAudit } from "./components/TabAudit";
 import { TabCriticalStock } from "./components/TabCriticalStock";
 import { TabGeneratedChallans } from "./components/TabGeneratedChallans";
+import { TabSettings } from "./components/TabSettings";
 import { GatePassScanner } from "./components/GatePassScanner";
 import { LoaderVerificationPortal } from "./components/LoaderVerificationPortal";
 
@@ -245,6 +257,43 @@ export default function App() {
     }
   };
 
+  // Settings & Configuration State (Master Commodities & Godown Officer)
+  const [commodities, setCommodities] = useState<string[]>(() => getStoredCommodities());
+  const [officerName, setOfficerName] = useState<string>(() => getStoredOfficerName());
+  const [officerDesignation, setOfficerDesignation] = useState<string>(() => getStoredOfficerDesignation());
+  const [godownName, setGodownName] = useState<string>(() => getStoredGodownName());
+
+  const handleAddCommodity = (newComm: string): boolean => {
+    if (!newComm.trim()) return false;
+    const trimmed = newComm.trim();
+    if (commodities.some((c) => c.toLowerCase() === trimmed.toLowerCase())) return false;
+    const updated = [...commodities, trimmed];
+    setCommodities(updated);
+    saveStoredCommodities(updated);
+    return true;
+  };
+
+  const handleDeleteCommodity = (commToDelete: string) => {
+    const updated = commodities.filter(
+      (c) => c.toLowerCase() !== commToDelete.toLowerCase()
+    );
+    setCommodities(updated);
+    saveStoredCommodities(updated);
+  };
+
+  const handleUpdateOfficer = (
+    name: string,
+    designation: string,
+    godown: string
+  ) => {
+    setOfficerName(name);
+    setOfficerDesignation(designation);
+    setGodownName(godown);
+    saveStoredOfficerName(name);
+    saveStoredOfficerDesignation(designation);
+    saveStoredGodownName(godown);
+  };
+
   // Standalone Gate Pass Scanner Route (/scan)
   if (isScannerRoute) {
     return (
@@ -268,7 +317,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className="h-screen max-h-screen w-screen overflow-hidden bg-background text-foreground flex flex-col font-sans">
       {/* Top Header Bar */}
       <Header
         onResetDemo={handleResetDemoData}
@@ -276,20 +325,22 @@ export default function App() {
         monsoonSimActive={monsoonSimActive}
         criticalBatchesCount={criticalBatches.length}
         onOpenCriticalTab={() => setActiveTab("critical")}
+        officerName={officerName}
+        onOpenSettingsTab={() => setActiveTab("settings")}
       />
 
-      {/* Main Layout: HeroUI Vertical Tabs with Left Collapsible Sidebar */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main Layout: Fixed Sidebar and Independent Scrollable Content Area */}
+      <div className="flex-1 flex overflow-hidden min-h-0">
         <Tabs
           selectedKey={activeTab}
           onSelectionChange={(key) => setActiveTab(key as string)}
           orientation="vertical"
-          className="flex-1 flex w-full"
+          className="flex-1 flex w-full h-full overflow-hidden min-h-0"
         >
-          {/* Left Side Tab Menu (Expandable & Collapsible) */}
+          {/* Left Side Tab Menu (Fixed at Position, Never Scrolls with Page) */}
           <aside
             data-collapsed={isSidebarCollapsed ? "true" : undefined}
-            className={`border-r border-border bg-surface flex flex-col shrink-0 transition-all duration-200 select-none ${
+            className={`h-full max-h-full border-r border-border bg-surface flex flex-col shrink-0 overflow-y-auto select-none transition-all duration-200 sticky top-0 ${
               isSidebarCollapsed ? "w-16 sidebar-collapsed" : "w-64"
             }`}
           >
@@ -320,18 +371,18 @@ export default function App() {
             </div>
 
             {/* HeroUI Tab List */}
-            <Tabs.List
-              className={`flex flex-col gap-1 w-full flex-1 ${
-                isSidebarCollapsed ? "p-2 items-center" : "p-2"
-              }`}
-            >
+            <Tabs.List className="flex flex-col w-full flex-1 p-0 gap-0 !rounded-none">
               {/* Tab 1: Dashboard Overview */}
               <Tabs.Tab
                 id="dashboard"
-                className={`rounded-lg cursor-pointer transition-all ${
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "dashboard"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
+                } ${
                   isSidebarCollapsed
-                    ? "!min-w-0 !w-10 !h-10 !p-0 flex items-center justify-center mx-auto"
-                    : "w-full flex items-center justify-between px-3 py-2.5 text-left"
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
                 }`}
               >
                 <div
@@ -340,9 +391,17 @@ export default function App() {
                   }`}
                   title="Dashboard Overview"
                 >
-                  <LayoutDashboard className="w-5 h-5 shrink-0 block m-auto" />
+                  <LayoutDashboard
+                    className={`w-5 h-5 shrink-0 block m-auto ${
+                      activeTab === "dashboard" ? "!text-white stroke-white" : ""
+                    }`}
+                  />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold truncate">
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "dashboard" ? "!text-white font-bold" : "font-semibold text-foreground"
+                      }`}
+                    >
                       Dashboard Overview
                     </span>
                   )}
@@ -352,12 +411,16 @@ export default function App() {
               {/* Tab 2: Critical Stock */}
               <Tabs.Tab
                 id="critical"
-                className={`rounded-lg cursor-pointer transition-all ${
-                  criticalBatches.length > 0 ? "text-danger" : ""
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "critical"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : criticalBatches.length > 0
+                    ? "text-danger hover:bg-danger/10"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
                 } ${
                   isSidebarCollapsed
-                    ? "!min-w-0 !w-10 !h-10 !p-0 flex items-center justify-center mx-auto"
-                    : "w-full flex items-center justify-between px-3 py-2.5 text-left"
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
                 }`}
               >
                 <div
@@ -368,24 +431,38 @@ export default function App() {
                 >
                   <AlertOctagon
                     className={`w-5 h-5 shrink-0 block m-auto ${
-                      criticalBatches.length > 0 ? "animate-pulse" : ""
+                      activeTab === "critical"
+                        ? "!text-white stroke-white"
+                        : criticalBatches.length > 0
+                        ? "animate-pulse text-danger"
+                        : ""
                     }`}
                   />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold truncate">
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "critical"
+                          ? "!text-white font-bold"
+                          : criticalBatches.length > 0
+                          ? "text-danger font-bold"
+                          : "font-semibold text-foreground"
+                      }`}
+                    >
                       Critical Stock
                     </span>
                   )}
-                  {isSidebarCollapsed && criticalBatches.length > 0 && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-danger ring-2 ring-surface" />
+                  {isSidebarCollapsed && criticalBatches.length > 0 && activeTab !== "critical" && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger ring-2 ring-surface" />
                   )}
                 </div>
                 {!isSidebarCollapsed && criticalBatches.length > 0 && (
                   <Chip
                     size="sm"
-                    variant="primary"
+                    variant={activeTab === "critical" ? "primary" : "primary"}
                     color="danger"
-                    className="text-[10px] font-bold"
+                    className={`text-[10px] font-bold ${
+                      activeTab === "critical" ? "!bg-white/20 !text-white border-0" : ""
+                    }`}
                   >
                     {criticalBatches.length}
                   </Chip>
@@ -395,10 +472,14 @@ export default function App() {
               {/* Tab 3: Inward Stock & Batches */}
               <Tabs.Tab
                 id="batches"
-                className={`rounded-lg cursor-pointer transition-all ${
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "batches"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
+                } ${
                   isSidebarCollapsed
-                    ? "!min-w-0 !w-10 !h-10 !p-0 flex items-center justify-center mx-auto"
-                    : "w-full flex items-center justify-between px-3 py-2.5 text-left"
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
                 }`}
               >
                 <div
@@ -407,10 +488,18 @@ export default function App() {
                   }`}
                   title="Inward Stock & Batches"
                 >
-                  <Boxes className="w-5 h-5 shrink-0 block m-auto" />
+                  <Boxes
+                    className={`w-5 h-5 shrink-0 block m-auto ${
+                      activeTab === "batches" ? "!text-white stroke-white" : ""
+                    }`}
+                  />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold truncate">
-                      Inward Stock & Batches
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "batches" ? "!text-white font-bold" : "font-semibold text-foreground"
+                      }`}
+                    >
+                      Inward Stock &amp; Batches
                     </span>
                   )}
                 </div>
@@ -419,7 +508,9 @@ export default function App() {
                     size="sm"
                     variant="soft"
                     color="default"
-                    className="text-[10px]"
+                    className={`text-[10px] ${
+                      activeTab === "batches" ? "!bg-white/20 !text-white border-0 font-bold" : ""
+                    }`}
                   >
                     {batches.filter((b) => Number(b.remainingQty || 0) > 0 && b.status !== "Depleted").length}
                   </Chip>
@@ -429,10 +520,14 @@ export default function App() {
               {/* Tab 4: Dispatch (Smart FIFO) */}
               <Tabs.Tab
                 id="dispatch"
-                className={`rounded-lg cursor-pointer transition-all ${
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "dispatch"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
+                } ${
                   isSidebarCollapsed
-                    ? "!min-w-0 !w-10 !h-10 !p-0 flex items-center justify-center mx-auto"
-                    : "w-full flex items-center justify-between px-3 py-2.5 text-left"
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
                 }`}
               >
                 <div
@@ -441,9 +536,17 @@ export default function App() {
                   }`}
                   title="Dispatch (Smart FIFO)"
                 >
-                  <Truck className="w-5 h-5 shrink-0 block m-auto" />
+                  <Truck
+                    className={`w-5 h-5 shrink-0 block m-auto ${
+                      activeTab === "dispatch" ? "!text-white stroke-white" : "text-primary"
+                    }`}
+                  />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold truncate">
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "dispatch" ? "!text-white font-bold" : "font-semibold text-primary"
+                      }`}
+                    >
                       Dispatch (FIFO)
                     </span>
                   )}
@@ -453,7 +556,9 @@ export default function App() {
                     size="sm"
                     variant="soft"
                     color="accent"
-                    className="text-[10px]"
+                    className={`text-[10px] ${
+                      activeTab === "dispatch" ? "!bg-white/20 !text-white border-0 font-bold" : ""
+                    }`}
                   >
                     Auto-Split
                   </Chip>
@@ -463,10 +568,14 @@ export default function App() {
               {/* Tab 5: Generated Challans */}
               <Tabs.Tab
                 id="challans"
-                className={`rounded-lg cursor-pointer transition-all ${
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "challans"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
+                } ${
                   isSidebarCollapsed
-                    ? "!min-w-0 !w-10 !h-10 !p-0 flex items-center justify-center mx-auto"
-                    : "w-full flex items-center justify-between px-3 py-2.5 text-left"
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
                 }`}
               >
                 <div
@@ -475,9 +584,17 @@ export default function App() {
                   }`}
                   title="Generated Challans"
                 >
-                  <FileCheck2 className="w-5 h-5 shrink-0 block m-auto" />
+                  <FileCheck2
+                    className={`w-5 h-5 shrink-0 block m-auto ${
+                      activeTab === "challans" ? "!text-white stroke-white" : ""
+                    }`}
+                  />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold truncate">
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "challans" ? "!text-white font-bold" : "font-semibold text-foreground"
+                      }`}
+                    >
                       Generated Challans
                     </span>
                   )}
@@ -487,7 +604,9 @@ export default function App() {
                     size="sm"
                     variant="soft"
                     color="default"
-                    className="text-[10px] font-bold"
+                    className={`text-[10px] font-bold ${
+                      activeTab === "challans" ? "!bg-white/20 !text-white border-0" : ""
+                    }`}
                   >
                     {challans.length}
                   </Chip>
@@ -497,10 +616,14 @@ export default function App() {
               {/* Tab 6: Godown Bay Layout */}
               <Tabs.Tab
                 id="bays"
-                className={`rounded-lg cursor-pointer transition-all ${
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "bays"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
+                } ${
                   isSidebarCollapsed
-                    ? "!min-w-0 !w-10 !h-10 !p-0 flex items-center justify-center mx-auto"
-                    : "w-full flex items-center justify-between px-3 py-2.5 text-left"
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
                 }`}
               >
                 <div
@@ -509,9 +632,17 @@ export default function App() {
                   }`}
                   title="Godown Bay Layout"
                 >
-                  <Warehouse className="w-5 h-5 shrink-0 block m-auto" />
+                  <Warehouse
+                    className={`w-5 h-5 shrink-0 block m-auto ${
+                      activeTab === "bays" ? "!text-white stroke-white" : ""
+                    }`}
+                  />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold truncate">
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "bays" ? "!text-white font-bold" : "font-semibold text-foreground"
+                      }`}
+                    >
                       Godown Bay Layout
                     </span>
                   )}
@@ -521,7 +652,9 @@ export default function App() {
                     size="sm"
                     variant="soft"
                     color="default"
-                    className="text-[10px]"
+                    className={`text-[10px] ${
+                      activeTab === "bays" ? "!bg-white/20 !text-white border-0 font-bold" : ""
+                    }`}
                   >
                     12 Bays
                   </Chip>
@@ -531,10 +664,14 @@ export default function App() {
               {/* Tab 7: Traceability & Audit */}
               <Tabs.Tab
                 id="audit"
-                className={`rounded-lg cursor-pointer transition-all ${
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "audit"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
+                } ${
                   isSidebarCollapsed
-                    ? "!min-w-0 !w-10 !h-10 !p-0 flex items-center justify-center mx-auto"
-                    : "w-full flex items-center justify-between px-3 py-2.5 text-left"
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
                 }`}
               >
                 <div
@@ -543,10 +680,54 @@ export default function App() {
                   }`}
                   title="Traceability & Audit"
                 >
-                  <FileSpreadsheet className="w-5 h-5 shrink-0 block m-auto" />
+                  <FileSpreadsheet
+                    className={`w-5 h-5 shrink-0 block m-auto ${
+                      activeTab === "audit" ? "!text-white stroke-white" : ""
+                    }`}
+                  />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold truncate">
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "audit" ? "!text-white font-bold" : "font-semibold text-foreground"
+                      }`}
+                    >
                       Traceability &amp; Audit
+                    </span>
+                  )}
+                </div>
+              </Tabs.Tab>
+
+              {/* Tab 8: System Settings */}
+              <Tabs.Tab
+                id="settings"
+                className={`w-full cursor-pointer transition-colors !rounded-none border-0 select-none ${
+                  activeTab === "settings"
+                    ? "!bg-blue-600 !text-white active-menu-tab"
+                    : "hover:bg-muted/10 text-muted hover:text-foreground"
+                } ${
+                  isSidebarCollapsed
+                    ? "h-12 !min-w-0 !p-0 flex items-center justify-center mx-auto"
+                    : "flex items-center justify-between px-4 py-3 text-left"
+                }`}
+              >
+                <div
+                  className={`flex items-center ${
+                    isSidebarCollapsed ? "justify-center w-full h-full" : "gap-3 min-w-0"
+                  }`}
+                  title="System Settings"
+                >
+                  <Settings
+                    className={`w-5 h-5 shrink-0 block m-auto ${
+                      activeTab === "settings" ? "!text-white stroke-white" : ""
+                    }`}
+                  />
+                  {!isSidebarCollapsed && (
+                    <span
+                      className={`text-xs truncate ${
+                        activeTab === "settings" ? "!text-white font-bold" : "font-semibold text-foreground"
+                      }`}
+                    >
+                      System Settings
                     </span>
                   )}
                 </div>
@@ -579,6 +760,7 @@ export default function App() {
                 monsoonSimActive={monsoonSimActive}
                 setMonsoonSimActive={setMonsoonSimActive}
                 onOpenCriticalTab={() => setActiveTab("critical")}
+                commodities={commodities}
               />
             </Tabs.Panel>
 
@@ -596,6 +778,7 @@ export default function App() {
                 batches={batches}
                 onToggleStatus={updateBatchStatus}
                 onLogDriage={logDriageAdjustment}
+                commodities={commodities}
               />
             </Tabs.Panel>
 
@@ -609,6 +792,8 @@ export default function App() {
                 preselectedBatchId={preselectedBatchForDispatch}
                 onClearPreselectedBatch={() => setPreselectedBatchForDispatch(null)}
                 onDispatchSuccess={handleDispatchSuccess}
+                commodities={commodities}
+                officerName={officerName}
               />
             </Tabs.Panel>
 
@@ -617,6 +802,8 @@ export default function App() {
               <TabGeneratedChallans
                 challans={challans}
                 onOpenScanner={handleOpenScanner}
+                commodities={commodities}
+                officerName={officerName}
               />
             </Tabs.Panel>
 
@@ -640,18 +827,32 @@ export default function App() {
                 auditLogs={auditLogs}
               />
             </Tabs.Panel>
+
+            {/* TAB 8: Settings & Master Configuration */}
+            <Tabs.Panel id="settings">
+              <TabSettings
+                batches={batches}
+                commodities={commodities}
+                onAddCommodity={handleAddCommodity}
+                onDeleteCommodity={handleDeleteCommodity}
+                officerName={officerName}
+                onUpdateOfficer={handleUpdateOfficer}
+                officerDesignation={officerDesignation}
+                godownName={godownName}
+              />
+            </Tabs.Panel>
           </main>
         </Tabs>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-surface py-4 text-xs text-muted text-center mt-auto">
+      {/* Fixed Slim Bottom Status Footer */}
+      <footer className="border-t border-border bg-surface py-2 text-[11px] text-muted text-center shrink-0 z-30">
         <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-2">
           <span>
-            FoodStock • iPDS Godown Smart Allocation & FIFO Compliance System
+            FoodStock • iPDS Godown Smart Allocation &amp; FIFO Compliance System
           </span>
           <span>
-            Ministry of Consumer Affairs, Food & Public Distribution • Govt of India
+            Ministry of Consumer Affairs, Food &amp; Public Distribution • Govt of India
           </span>
         </div>
       </footer>

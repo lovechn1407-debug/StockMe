@@ -16,12 +16,20 @@ import {
 } from "lucide-react";
 import type { DeliveryChallan } from "../types";
 import { QRCodeSvg } from "./QRCodeSvg";
+import {
+  getStoredOfficerName,
+  getStoredOfficerDesignation,
+  getStoredGodownName,
+} from "../lib/settings";
 
 interface ChallanModalProps {
   challan: DeliveryChallan | null;
   isOpen: boolean;
   onClose: () => void;
   onOpenScanner?: () => void;
+  officerName?: string;
+  officerDesignation?: string;
+  godownName?: string;
 }
 
 export function ChallanModal({
@@ -29,7 +37,14 @@ export function ChallanModal({
   isOpen,
   onClose,
   onOpenScanner,
+  officerName,
+  officerDesignation,
+  godownName,
 }: ChallanModalProps) {
+  const currentOfficer = officerName || getStoredOfficerName();
+  const currentDesignation = officerDesignation || getStoredOfficerDesignation();
+  const currentGodown = godownName || getStoredGodownName();
+
   const [copyType, setCopyType] = useState<"ORIGINAL" | "DUPLICATE" | "TRIPLICATE">(
     "ORIGINAL"
   );
@@ -331,7 +346,7 @@ export function ChallanModal({
                       <div className="text-[11px] opacity-80">
                         {challan.isFifoCompliant
                           ? "Grains sourced automatically from oldest eligible warehouse stacks to guarantee zero spoilage."
-                          : `Authorized by: ${challan.approvingOfficer || "Assistant Godown Officer"}. Remarks: ${challan.exceptionRemarks || "Duly documented in audit ledger"}`}
+                          : `Authorized by: ${challan.approvingOfficer || currentOfficer}. Remarks: ${challan.exceptionRemarks || "Duly documented in audit ledger"}`}
                       </div>
                     </div>
                   </div>
@@ -452,12 +467,12 @@ export function ChallanModal({
                   <div className="space-y-8">
                     <div className="h-10 flex items-end justify-center">
                       <span className="font-cursive text-sm text-zinc-700 italic border-b border-zinc-400 pb-0.5 px-4">
-                        A. K. Sharma
+                        {currentOfficer}
                       </span>
                     </div>
                     <div className="border-t border-zinc-900 pt-1">
-                      <div className="font-bold text-zinc-900">Godown Dispatch Officer</div>
-                      <div className="text-[10px] text-zinc-500">Buffer Godown Unit-4</div>
+                      <div className="font-bold text-zinc-900">{currentDesignation}</div>
+                      <div className="text-[10px] text-zinc-500">{currentGodown}</div>
                     </div>
                   </div>
 

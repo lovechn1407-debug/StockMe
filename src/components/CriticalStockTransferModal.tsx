@@ -13,6 +13,11 @@ import { getBatchAgeDays, getExpiryGapColor, getExpiryGapDays } from "../lib/db"
 import { QRCodeSvg } from "./QRCodeSvg";
 import { ref, set, update, get } from "firebase/database";
 import { db } from "../lib/firebase";
+import {
+  getStoredOfficerName,
+  getStoredOfficerDesignation,
+  getStoredGodownName,
+} from "../lib/settings";
 
 const ROOT_PATH = "foodstock_ipds";
 
@@ -87,7 +92,7 @@ export function CriticalStockTransferModal({
       const challan: TransferChallan = {
         id: challanId,
         challanNumber,
-        fromGodown: "State Buffer Godown Unit-4",
+        fromGodown: getStoredGodownName(),
         toGodownId: selectedGodown.id,
         toGodownName: selectedGodown.name,
         commodity: criticalBatches[0]?.commodity || "Wheat",
@@ -95,7 +100,7 @@ export function CriticalStockTransferModal({
         totalQuantity: batchItems.reduce((s, i) => s + i.quantity, 0),
         transferDate: new Date().toISOString().split("T")[0],
         reason: "Critical Age Stock (>90 Days) — Priority Inter-Godown Transfer",
-        issuedBy: "Assistant Godown Officer (AGO)",
+        issuedBy: `${getStoredOfficerName()} (${getStoredOfficerDesignation()})`,
         createdAt: now,
       };
 
@@ -393,7 +398,7 @@ export function CriticalStockTransferModal({
                   <Separator />
 
                   <div className="grid grid-cols-3 gap-4 text-center text-xs text-muted">
-                    <div className="border-t border-border pt-1">Dispatch Officer (AGO)</div>
+                    <div className="border-t border-border pt-1 font-medium">{getStoredOfficerName()} ({getStoredOfficerDesignation()})</div>
                     <div className="border-t border-border pt-1">Receiving Godown Officer</div>
                     <div className="border-t border-border pt-1">Authorizing Inspector</div>
                   </div>

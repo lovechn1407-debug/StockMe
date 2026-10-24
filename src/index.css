@@ -4,82 +4,6 @@
 :root {
   --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-family: var(--font-sans);
-
-  /* ─── GOVERNMENT ENTERPRISE SAAS PALETTE ─── */
-  --gov-navy: #17365D;
-  --gov-teal: #087F8C;
-  --gov-bg: #F4F6F9;
-  --gov-card: #FFFFFF;
-  --gov-text-primary: #172B4D;
-  --gov-text-secondary: #64748B;
-  --gov-green: #16805D;
-  --gov-amber: #B96B08;
-  --gov-red: #C62828;
-  --gov-border: #DCE3EB;
-  --gov-active-nav-bg: #E8F1F8;
-
-  /* Theme System Color Overrides */
-  --background: #F4F6F9;
-  --foreground: #172B4D;
-  --surface: #FFFFFF;
-  --surface-foreground: #172B4D;
-  --surface-secondary: #F8FAFC;
-  --surface-tertiary: #F1F5F9;
-  --overlay: #FFFFFF;
-  --overlay-foreground: #172B4D;
-  --muted: #64748B;
-
-  --accent: #17365D;
-  --accent-foreground: #FFFFFF;
-  --accent-hover: #122B4A;
-
-  --primary: #17365D;
-  --primary-foreground: #FFFFFF;
-  --secondary: #087F8C;
-  --secondary-foreground: #FFFFFF;
-
-  --success: #16805D;
-  --success-foreground: #FFFFFF;
-  --success-soft: rgba(22, 128, 93, 0.12);
-  --success-soft-foreground: #16805D;
-
-  --warning: #B96B08;
-  --warning-foreground: #FFFFFF;
-  --warning-soft: rgba(185, 107, 8, 0.12);
-  --warning-soft-foreground: #B96B08;
-
-  --danger: #C62828;
-  --danger-foreground: #FFFFFF;
-  --danger-soft: rgba(198, 40, 40, 0.12);
-  --danger-soft-foreground: #C62828;
-
-  --border: #DCE3EB;
-  --separator: #DCE3EB;
-  --focus: #087F8C;
-  --default: #F1F5F9;
-  --default-foreground: #172B4D;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-}
-
-@theme inline {
-  --color-primary: #17365D;
-  --color-primary-foreground: #FFFFFF;
-  --color-secondary: #087F8C;
-  --color-secondary-foreground: #FFFFFF;
-  --color-teal: #087F8C;
-  --color-navy: #17365D;
-  --color-border: #DCE3EB;
-  --color-background: #F4F6F9;
-  --color-surface: #FFFFFF;
-  --color-foreground: #172B4D;
-  --color-muted: #64748B;
-  --color-success: #16805D;
-  --color-warning: #B96B08;
-  --color-danger: #C62828;
 }
 
 /* Reduced clean corner radius for dashboard cards and alerts (sleek 12px instead of oversized 32px) */
@@ -93,91 +17,88 @@ body {
   border-radius: 0.75rem !important;
 }
 
-/* ─── NAVIGATION SIDEBAR ENTERPRISE THEMING ─── */
-aside {
-  background-color: #FFFFFF !important;
-  border-right-color: #DCE3EB !important;
-}
-
-aside .tabs__list-container {
+/* Sidebar menu tabs: Full rectangle, zero curves, edge-to-edge filled, solid blue highlight with white text & icons */
+aside [data-slot="list"],
+aside [role="tablist"],
+aside .tabs__list-container,
+aside .tabs__list {
+  width: 100% !important;
+  max-width: 100% !important;
+  border-radius: 0 !important;
   background-color: transparent !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  border: none !important;
 }
 
+aside [data-slot="tab"],
+aside [role="tab"],
+aside button[role="tab"],
 aside .tabs__tab {
-  color: #64748B !important;
-  border-radius: 0.5rem !important;
-  transition: all 0.15s ease-in-out;
-}
-
-aside .tabs__tab svg {
-  color: #64748B !important;
-}
-
-aside .tabs__tab:hover:not([data-selected="true"]) {
-  background-color: #F4F6F9 !important;
-  color: #172B4D !important;
-}
-
-aside .tabs__tab:hover:not([data-selected="true"]) svg {
-  color: #172B4D !important;
-}
-
-aside .tabs__tab[data-selected="true"] {
-  background-color: #E8F1F8 !important;
-  color: #17365D !important;
-  font-weight: 700 !important;
-  border-left: 3px solid #17365D !important;
-}
-
-aside .tabs__tab[data-selected="true"] svg {
-  color: #17365D !important;
-}
-
-aside .tabs__tab[data-selected="true"] span {
-  color: #17365D !important;
-}
-
-/* Header border & background enforcement */
-header {
-  background-color: #FFFFFF !important;
-  border-bottom-color: #DCE3EB !important;
-}
-
-/* Footer background & border */
-footer {
-  background-color: #FFFFFF !important;
-  border-top-color: #DCE3EB !important;
-  color: #64748B !important;
-}
-
-/* Ensure collapsed vertical tabs center icons without min-w-20 or extra padding */
-aside[data-collapsed="true"] .tabs__list-container,
-aside.sidebar-collapsed .tabs__list-container {
   width: 100% !important;
-  display: flex !important;
-  justify-content: center !important;
-  border-radius: 0.5rem !important;
-}
-
-aside[data-collapsed="true"] .tabs__list,
-aside.sidebar-collapsed .tabs__list {
-  width: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  padding: 0.25rem 0 !important;
-}
-
-aside[data-collapsed="true"] .tabs__tab,
-aside.sidebar-collapsed .tabs__tab {
+  max-width: 100% !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
   min-width: 0 !important;
-  width: 2.5rem !important;
-  height: 2.5rem !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease !important;
+}
+
+aside [data-slot="cursor"],
+aside [data-slot="indicator"] {
+  border-radius: 0 !important;
+  background-color: #2563eb !important;
+}
+
+aside[data-collapsed="true"] [data-slot="tab"],
+aside[data-collapsed="true"] [role="tab"],
+aside[data-collapsed="true"] .tabs__tab,
+aside.sidebar-collapsed [data-slot="tab"],
+aside.sidebar-collapsed [role="tab"],
+aside.sidebar-collapsed .tabs__tab {
+  width: 100% !important;
+  height: 3rem !important;
   padding: 0 !important;
   justify-content: center !important;
   align-items: center !important;
-  margin-left: auto !important;
-  margin-right: auto !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+/* Selected Tab: Solid blue rectangle filled from start to end with pure white font & icon */
+aside [data-slot="tab"][data-selected="true"],
+aside [data-slot="tab"][aria-selected="true"],
+aside [role="tab"][data-selected="true"],
+aside [role="tab"][aria-selected="true"],
+aside .tabs__tab[data-selected="true"],
+aside .tabs__tab[aria-selected="true"],
+aside .active-menu-tab {
+  background-color: #2563eb !important; /* Solid Blue */
+  color: #ffffff !important;
+  border-radius: 0 !important;
+}
+
+aside [data-slot="tab"][data-selected="true"] *,
+aside [data-slot="tab"][aria-selected="true"] *,
+aside [role="tab"][data-selected="true"] *,
+aside [role="tab"][aria-selected="true"] *,
+aside .tabs__tab[data-selected="true"] *,
+aside .tabs__tab[aria-selected="true"] *,
+aside .active-menu-tab * {
+  color: #ffffff !important;
+}
+
+aside [data-slot="tab"][data-selected="true"] svg,
+aside [data-slot="tab"][aria-selected="true"] svg,
+aside [role="tab"][data-selected="true"] svg,
+aside [role="tab"][aria-selected="true"] svg,
+aside .tabs__tab[data-selected="true"] svg,
+aside .tabs__tab[aria-selected="true"] svg,
+aside .active-menu-tab svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
 }
 
 /* ─── OFFICIAL GOVERNMENT DELIVERY CHALLAN & GATE PASS PRINT MEDIA STYLES ─── */
