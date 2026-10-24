@@ -441,9 +441,9 @@ export default function App() {
                   }`}
                   title="Dispatch (Smart FIFO)"
                 >
-                  <Truck className="w-5 h-5 shrink-0 text-primary block m-auto" />
+                  <Truck className="w-5 h-5 shrink-0 block m-auto" />
                   {!isSidebarCollapsed && (
-                    <span className="text-xs font-semibold text-primary truncate">
+                    <span className="text-xs font-semibold truncate">
                       Dispatch (FIFO)
                     </span>
                   )}

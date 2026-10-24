@@ -96,7 +96,7 @@ const GRAIN_THEMES: Record<
 
 const DEFAULT_GRAIN_THEME = {
   gradient: "from-primary via-primary/80 to-accent",
-  solidColor: "#3b82f6",
+  solidColor: "#17365D",
   lightBg: "bg-primary/10",
   borderColor: "border-primary/30",
   textColor: "text-primary",
@@ -434,8 +434,8 @@ export function DashboardCharts({ batches, challans }: DashboardChartsProps) {
             >
               <defs>
                 <linearGradient id="fifoAreaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.32" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.01" />
+                  <stop offset="0%" stopColor="#16805D" stopOpacity="0.32" />
+                  <stop offset="100%" stopColor="#16805D" stopOpacity="0.01" />
                 </linearGradient>
               </defs>
 
@@ -475,7 +475,7 @@ export function DashboardCharts({ batches, challans }: DashboardChartsProps) {
                 y1={thresholdY}
                 x2={chartWidth - paddingX}
                 y2={thresholdY}
-                stroke="#f59e0b"
+                stroke="#B96B08"
                 strokeWidth="1.5"
                 strokeDasharray="4 4"
                 opacity="0.85"
@@ -483,7 +483,7 @@ export function DashboardCharts({ batches, challans }: DashboardChartsProps) {
               <text
                 x={chartWidth - paddingX - 4}
                 y={thresholdY - 6}
-                fill="#f59e0b"
+                fill="#B96B08"
                 fontSize="9"
                 fontWeight="bold"
                 textAnchor="end"
@@ -501,7 +501,7 @@ export function DashboardCharts({ batches, challans }: DashboardChartsProps) {
                 <path
                   d={linePathD}
                   fill="none"
-                  stroke="#10b981"
+                  stroke="#16805D"
                   strokeWidth="3.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -523,7 +523,7 @@ export function DashboardCharts({ batches, challans }: DashboardChartsProps) {
 
                     {/* Outer Glow Halo when hovered */}
                     {isHovered && (
-                      <circle cx={pt.x} cy={pt.y} r="10" fill="#10b981" fillOpacity="0.25" />
+                      <circle cx={pt.x} cy={pt.y} r="10" fill="#16805D" fillOpacity="0.25" />
                     )}
 
                     {/* Point Circle */}
@@ -532,7 +532,7 @@ export function DashboardCharts({ batches, challans }: DashboardChartsProps) {
                       cy={pt.y}
                       r={isHovered ? "5.5" : "4"}
                       fill="#ffffff"
-                      stroke="#10b981"
+                      stroke="#16805D"
                       strokeWidth="3"
                       className="transition-all"
                     />

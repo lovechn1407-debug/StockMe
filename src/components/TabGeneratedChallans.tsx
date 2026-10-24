@@ -218,7 +218,7 @@ export function TabGeneratedChallans({
                 <span className="text-xs font-semibold text-muted">Cleared</span>
               </div>
             </div>
-            <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400">
+            <div className="p-2 rounded-lg bg-[#087F8C]/10 text-[#087F8C] border border-[#087F8C]/20">
               <Truck className="w-5 h-5" />
             </div>
           </div>
@@ -462,7 +462,7 @@ export function TabGeneratedChallans({
                               <Button
                                 size="sm"
                                 variant="secondary"
-                                className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10 cursor-pointer"
+                                className="text-xs font-bold text-success hover:bg-success/10 cursor-pointer"
                                 onPress={() => handleMarkGateClear(challan)}
                               >
                                 Clear Gate
