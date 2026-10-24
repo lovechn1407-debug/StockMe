@@ -394,91 +394,95 @@ export function TabSettings({
             </div>
 
             <Table aria-label="Master Commodities Table">
-              <Table.Header>
-                <Table.Column>Commodity Name</Table.Column>
-                <Table.Column>Catalog Tier</Table.Column>
-                <Table.Column>Active Batches</Table.Column>
-                <Table.Column>Stored Quantity</Table.Column>
-                <Table.Column>System Status</Table.Column>
-                <Table.Column className="text-right">Actions</Table.Column>
-              </Table.Header>
+              <Table.ScrollContainer className="overflow-x-auto">
+                <Table.Content>
+                  <Table.Header>
+                    <Table.Column isRowHeader>Commodity Name</Table.Column>
+                    <Table.Column>Catalog Tier</Table.Column>
+                    <Table.Column>Active Batches</Table.Column>
+                    <Table.Column>Stored Quantity</Table.Column>
+                    <Table.Column>System Status</Table.Column>
+                    <Table.Column className="text-right">Actions</Table.Column>
+                  </Table.Header>
 
-              <Table.Body>
-                {commodities.map((commodity) => {
-                  const isDefaultCore = COMMODITIES.includes(commodity);
-                  const matchingBatches = batches.filter(
-                    (b) => b.commodity.toLowerCase() === commodity.toLowerCase()
-                  );
-                  const activeBatchesCount = matchingBatches.filter(
-                    (b) => b.remainingQty > 0
-                  ).length;
-                  const totalStoredQty = matchingBatches.reduce(
-                    (sum, b) => sum + (b.remainingQty || 0),
-                    0
-                  );
+                  <Table.Body>
+                    {commodities.map((commodity) => {
+                      const isDefaultCore = COMMODITIES.includes(commodity);
+                      const matchingBatches = batches.filter(
+                        (b) => b.commodity.toLowerCase() === commodity.toLowerCase()
+                      );
+                      const activeBatchesCount = matchingBatches.filter(
+                        (b) => b.remainingQty > 0
+                      ).length;
+                      const totalStoredQty = matchingBatches.reduce(
+                        (sum, b) => sum + (b.remainingQty || 0),
+                        0
+                      );
 
-                  return (
-                    <Table.Row key={commodity}>
-                      <Table.Cell>
-                        <div className="flex items-center gap-2">
-                          <Wheat className="w-4 h-4 text-primary shrink-0" />
-                          <span className="font-semibold text-foreground">
-                            {commodity}
-                          </span>
-                        </div>
-                      </Table.Cell>
+                      return (
+                        <Table.Row key={commodity}>
+                          <Table.Cell>
+                            <div className="flex items-center gap-2">
+                              <Wheat className="w-4 h-4 text-primary shrink-0" />
+                              <span className="font-semibold text-foreground">
+                                {commodity}
+                              </span>
+                            </div>
+                          </Table.Cell>
 
-                      <Table.Cell>
-                        {isDefaultCore ? (
-                          <Chip size="sm" variant="soft" color="accent">
-                            Core NFSA Grain
-                          </Chip>
-                        ) : (
-                          <Chip size="sm" variant="soft" color="default">
-                            State Buffer Extended
-                          </Chip>
-                        )}
-                      </Table.Cell>
+                          <Table.Cell>
+                            {isDefaultCore ? (
+                              <Chip size="sm" variant="soft" color="accent">
+                                Core NFSA Grain
+                              </Chip>
+                            ) : (
+                              <Chip size="sm" variant="soft" color="default">
+                                State Buffer Extended
+                              </Chip>
+                            )}
+                          </Table.Cell>
 
-                      <Table.Cell>
-                        <span className="font-medium text-foreground">
-                          {activeBatchesCount} {activeBatchesCount === 1 ? "Stack" : "Stacks"}
-                        </span>
-                      </Table.Cell>
+                          <Table.Cell>
+                            <span className="font-medium text-foreground">
+                              {activeBatchesCount} {activeBatchesCount === 1 ? "Stack" : "Stacks"}
+                            </span>
+                          </Table.Cell>
 
-                      <Table.Cell>
-                        <span className="font-mono font-bold text-foreground">
-                          {totalStoredQty.toLocaleString()} Q
-                        </span>
-                      </Table.Cell>
+                          <Table.Cell>
+                            <span className="font-mono font-bold text-foreground">
+                              {totalStoredQty.toLocaleString()} Q
+                            </span>
+                          </Table.Cell>
 
-                      <Table.Cell>
-                        <Chip size="sm" variant="soft" color="success">
-                          Active in System
-                        </Chip>
-                      </Table.Cell>
+                          <Table.Cell>
+                            <Chip size="sm" variant="soft" color="success">
+                              Active in System
+                            </Chip>
+                          </Table.Cell>
 
-                      <Table.Cell className="text-right">
-                        {isDefaultCore ? (
-                          <span className="text-xs text-muted italic">
-                            Protected Core
-                          </span>
-                        ) : (
-                          <Button
-                            variant="danger"
-                            size="sm"
-                            isIconOnly
-                            onPress={() => onDeleteCommodity(commodity)}
-                            aria-label={`Remove ${commodity}`}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
-                        )}
-                      </Table.Cell>
-                    </Table.Row>
-                  );
-                })}
-              </Table.Body>
+                          <Table.Cell className="text-right">
+                            {isDefaultCore ? (
+                              <span className="text-xs text-muted italic">
+                                Protected Core
+                              </span>
+                            ) : (
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                isIconOnly
+                                onPress={() => onDeleteCommodity(commodity)}
+                                aria-label={`Remove ${commodity}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            )}
+                          </Table.Cell>
+                        </Table.Row>
+                      );
+                    })}
+                  </Table.Body>
+                </Table.Content>
+              </Table.ScrollContainer>
             </Table>
           </div>
         </Card.Content>
